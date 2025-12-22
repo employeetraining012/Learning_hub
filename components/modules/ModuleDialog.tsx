@@ -41,7 +41,7 @@ export function ModuleDialog({
 
     let result
     if (module) {
-        result = await updateModule(module.id, courseId, formData, tenantSlug)
+        result = await updateModule(module.id, courseId, formData, tenantId || module.tenant_id, tenantSlug)
     } else {
         if (!tenantId) {
             toast.error('Missing tenant ID')

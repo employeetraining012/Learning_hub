@@ -21,6 +21,7 @@ export type Course = {
 
 export type Module = {
     id: string;
+    tenant_id: string;
     course_id: string;
     title: string;
     description: string | null;
@@ -29,7 +30,7 @@ export type Module = {
     updated_at: string;
 };
 
-export type ContentItemType = 'youtube' | 'pdf' | 'ppt' | 'link' | 'doc' | 'image' | 'video' | 'zip';
+export type ContentItemType = 'youtube' | 'pdf' | 'ppt' | 'link' | 'video' | 'image';
 
 export type ContentItem = {
     id: string;

@@ -56,7 +56,7 @@ export function EmployeeTable({ employees, tenantSlug, tenantId }: EmployeeTable
         if (!confirm(`Are you sure you want to ${emp.active ? 'deactivate' : 'activate'} ${emp.full_name}?`)) return
         
         setLoadingId(emp.id)
-        const res = await toggleEmployeeStatus(emp.id, emp.active, tenantSlug)
+        const res = await toggleEmployeeStatus(emp.id, emp.active, tenantId, tenantSlug)
         setLoadingId(null)
 
         if (res.error) toast.error(res.error)
@@ -78,7 +78,7 @@ export function EmployeeTable({ employees, tenantSlug, tenantId }: EmployeeTable
         if (!confirm(`Send a magic link to ${emp.email}?`)) return
 
         setLoadingId(emp.id)
-        const res = await sendMagicLink(emp.email, tenantSlug)
+        const res = await sendMagicLink(emp.email, tenantId, tenantSlug)
         setLoadingId(null)
 
         if (res.error) toast.error(res.error)
@@ -94,7 +94,7 @@ export function EmployeeTable({ employees, tenantSlug, tenantId }: EmployeeTable
         }
 
         setLoadingId(emp.id)
-        const res = await resetEmployeePassword(emp.id, newPassword, tenantSlug)
+        const res = await resetEmployeePassword(emp.id, newPassword, tenantId, tenantSlug)
         setLoadingId(null)
 
         if (res.error) toast.error(res.error)

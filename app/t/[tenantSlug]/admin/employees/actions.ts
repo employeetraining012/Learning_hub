@@ -81,6 +81,7 @@ export async function createEmployee(formData: FormData, tenantId: string, tenan
 
     // 5. Audit
     await logAudit({
+        tenantId,
         action: 'USER_CREATE',
         entityType: 'user',
         entityId: userId,
@@ -91,7 +92,7 @@ export async function createEmployee(formData: FormData, tenantId: string, tenan
     return { success: true, message: 'Employee created successfully. Please share the temporary password with them.' }
 }
 
-export async function toggleEmployeeStatus(employeeId: string, currentStatus: boolean, tenantSlug: string) {
+export async function toggleEmployeeStatus(employeeId: string, currentStatus: boolean, tenantId: string, tenantSlug: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -107,10 +108,11 @@ export async function toggleEmployeeStatus(employeeId: string, currentStatus: bo
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'USER_UPDATE',
         entityType: 'profile',
         entityId: employeeId,
-        metadata: { active: !currentStatus }
+        metadata: { active: !currentStatus, tenantId }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.employees)
@@ -140,6 +142,7 @@ export async function updateEmployeeRole(employeeId: string, newRole: 'admin' | 
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId: tenant.id,
         action: 'USER_UPDATE',
         entityType: 'membership',
         entityId: employeeId,
@@ -150,7 +153,7 @@ export async function updateEmployeeRole(employeeId: string, newRole: 'admin' | 
     return { success: true }
 }
 
-export async function sendMagicLink(email: string, tenantSlug: string) {
+export async function sendMagicLink(email: string, tenantId: string, tenantSlug: string) {
     const supabase = await createClient()
     const adminClient = createServiceRoleClient()
 
@@ -166,17 +169,18 @@ export async function sendMagicLink(email: string, tenantSlug: string) {
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'SEND_MAGIC_LINK',
         entityType: 'user',
         entityId: email,
-        metadata: { email }
+        metadata: { email, tenantId }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.employees)
     return { success: true, message: 'Magic link email sent successfully' }
 }
 
-export async function sendPasswordReset(email: string, tenantSlug: string) {
+export async function sendPasswordReset(email: string, tenantId: string, tenantSlug: string) {
     const adminClient = createServiceRoleClient()
 
     const { error } = await adminClient.auth.admin.generateLink({
@@ -190,10 +194,11 @@ export async function sendPasswordReset(email: string, tenantSlug: string) {
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'SEND_PASSWORD_RESET',
         entityType: 'user',
         entityId: email,
-        metadata: { email }
+        metadata: { email, tenantId }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.employees)
@@ -281,7 +286,7 @@ export async function deleteEmployee(employeeId: string, tenantId: string, tenan
     return { success: true }
 }
 
-export async function resetEmployeePassword(employeeId: string, newPassword: string, tenantSlug: string) {
+export async function resetEmployeePassword(employeeId: string, newPassword: string, tenantId: string, tenantSlug: string) {
     const adminClient = createServiceRoleClient()
 
     // 1. Update password and set force_password_reset flag
@@ -296,10 +301,11 @@ export async function resetEmployeePassword(employeeId: string, newPassword: str
 
     // 2. Audit
     await logAudit({
+        tenantId,
         action: 'USER_UPDATE',
         entityType: 'user',
         entityId: employeeId,
-        metadata: { password_reset: true, manual_override: true }
+        metadata: { password_reset: true, manual_override: true, tenantId }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.employees)

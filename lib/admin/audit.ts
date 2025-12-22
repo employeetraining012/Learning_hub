@@ -12,13 +12,14 @@ type AuditAction =
     | 'COHORT_CREATE' | 'COHORT_MEMBER_ADD' | 'COHORT_ASSIGNMENT_CREATE'
 
 interface LogEntry {
+    tenantId?: string
     action: AuditAction
     entityType: 'course' | 'module' | 'content' | 'user' | 'profile' | 'assignment' | 'system' | 'cohort' | 'membership'
     entityId?: string
     metadata?: any
 }
 
-export async function logAudit({ action, entityType, entityId, metadata }: LogEntry) {
+export async function logAudit({ tenantId, action, entityType, entityId, metadata }: LogEntry) {
     try {
         const supabase = await createClient()
         const { data: { user } } = await supabase.auth.getUser()
@@ -29,7 +30,10 @@ export async function logAudit({ action, entityType, entityId, metadata }: LogEn
             return
         }
 
+        const tId = tenantId || metadata?.tenantId
+
         const { error } = await supabase.from('audit_logs').insert({
+            tenant_id: tId,
             actor_id: user.id,
             actor_email: user.email,
             action,

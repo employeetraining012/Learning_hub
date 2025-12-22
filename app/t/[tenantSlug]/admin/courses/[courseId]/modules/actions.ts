@@ -16,7 +16,7 @@ export async function createModule(courseId: string, formData: FormData, tenantI
     const supabase = await createClient()
 
     const title = formData.get('title') as string
-    const description = formData.get('description') as string
+    const description = (formData.get('description') as string) || undefined
     const sort_order = formData.get('sort_order')
 
     const validation = moduleSchema.safeParse({ title, description, sort_order })
@@ -39,6 +39,7 @@ export async function createModule(courseId: string, formData: FormData, tenantI
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'MODULE_CREATE',
         entityType: 'module',
         entityId: newModule.id,
@@ -49,11 +50,11 @@ export async function createModule(courseId: string, formData: FormData, tenantI
     return { success: true }
 }
 
-export async function updateModule(id: string, courseId: string, formData: FormData, tenantSlug: string) {
+export async function updateModule(id: string, courseId: string, formData: FormData, tenantId: string, tenantSlug: string) {
     const supabase = await createClient()
 
     const title = formData.get('title') as string
-    const description = formData.get('description') as string
+    const description = (formData.get('description') as string) || undefined
     const sort_order = formData.get('sort_order')
 
     const validation = moduleSchema.safeParse({ title, description, sort_order })
@@ -73,27 +74,29 @@ export async function updateModule(id: string, courseId: string, formData: FormD
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'MODULE_UPDATE',
         entityType: 'module',
         entityId: id,
-        metadata: { title, courseId }
+        metadata: { title, courseId, tenantId }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.modules(courseId))
     return { success: true }
 }
 
-export async function deleteModule(id: string, courseId: string, tenantSlug: string) {
+export async function deleteModule(id: string, courseId: string, tenantId: string, tenantSlug: string) {
     const supabase = await createClient()
     const { error } = await supabase.from('modules').delete().eq('id', id)
 
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'MODULE_DELETE',
         entityType: 'module',
         entityId: id,
-        metadata: { courseId }
+        metadata: { courseId, tenantId }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.modules(courseId))

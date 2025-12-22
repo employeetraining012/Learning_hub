@@ -66,6 +66,8 @@ export function ContentDialog({
     event.preventDefault()
     setLoading(true)
     const formData = new FormData(event.currentTarget)
+    formData.set('type', type) // Ensure type is explicitly set
+
     if (source === 'storage') {
         formData.append('storage_path', storagePath)
         formData.append('content_source', 'storage')
@@ -73,7 +75,7 @@ export function ContentDialog({
     
     let result
     if (content) {
-        result = await updateContent(content.id, moduleId, formData, tenantSlug)
+        result = await updateContent(content.id, moduleId, formData, tenantId || '', tenantSlug)
     } else {
         if (!tenantId) {
             toast.error('Missing tenant ID')
@@ -113,7 +115,7 @@ export function ContentDialog({
             </div>
             <div className="grid gap-2">
                 <Label htmlFor="type">Type</Label>
-                <Select name="type" value={type} onValueChange={(val: any) => setType(val)}>
+                <Select value={type} onValueChange={(val: any) => setType(val)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -127,8 +129,16 @@ export function ContentDialog({
             </div>
             <div className="grid gap-2">
                 <Label htmlFor="url">URL</Label>
-                <Input id="url" name="url" type="url" defaultValue={content?.url} required placeholder="https://" />
+                <Input 
+                    id="url" 
+                    name="url" 
+                    type="text" 
+                    defaultValue={content?.url || ''} 
+                    required 
+                    placeholder="https://" 
+                />
             </div>
+            <input type="hidden" name="type" value={type} />
             </div>
             <DialogFooter>
             <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>

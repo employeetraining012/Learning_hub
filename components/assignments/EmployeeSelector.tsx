@@ -23,16 +23,43 @@ interface EmployeeSelectorProps {
     employees: Profile[]
     selectedId?: string
     onSelect: (id: string) => void
+    tenantId: string // Ensure tenantId is passed
 }
 
-export function EmployeeSelector({ employees, selectedId, onSelect }: EmployeeSelectorProps) {
+export function EmployeeSelector({ employees: initialEmployees, selectedId, onSelect, tenantId }: EmployeeSelectorProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState(selectedId || "")
+  const [employees, setEmployees] = React.useState<Profile[]>(initialEmployees)
+  const [query, setQuery] = React.useState("")
+  const [loading, setLoading] = React.useState(false)
 
   // Sync prop changes
   React.useEffect(() => {
       if (selectedId) setValue(selectedId)
   }, [selectedId])
+
+  // Real-time search effect
+  React.useEffect(() => {
+    const search = async () => {
+        if (!query) {
+            setEmployees(initialEmployees)
+            return
+        }
+        
+        setLoading(true)
+        try {
+            const results = await searchEmployees(query, tenantId)
+            setEmployees(results)
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const timer = setTimeout(search, 300)
+    return () => clearTimeout(timer)
+  }, [query, initialEmployees, tenantId])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -44,27 +71,25 @@ export function EmployeeSelector({ employees, selectedId, onSelect }: EmployeeSe
           className="w-[300px] justify-between"
         >
           {value
-            ? employees.find((emp) => emp.id === value)?.full_name
+            ? (employees.find((emp) => emp.id === value)?.full_name || initialEmployees.find((emp) => emp.id === value)?.full_name || "Select employee...")
             : "Select employee..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
-        <Command>
-          <CommandInput placeholder="Search employee..." />
+        <Command shouldFilter={false}>
+          <CommandInput placeholder="Search employee..." onValueChange={setQuery} />
            <CommandList>
-            <CommandEmpty>No employee found.</CommandEmpty>
+            {loading && <div className="py-6 text-center text-sm text-muted-foreground">Searching...</div>}
+            {!loading && employees.length === 0 && <CommandEmpty>No employee found.</CommandEmpty>}
             <CommandGroup>
                 {employees.map((emp) => (
                 <CommandItem
                     key={emp.id}
-                    value={emp.full_name} // Command uses this for search filtering
+                    value={emp.id} // Use ID as value since we handle filtering manually
                     onSelect={(currentValue) => {
-                        // currentValue is the 'value' prop (full_name) lowercased by cmdk
-                        // We need to map back to ID. 
-                        // Better to use full_name as label and handle ID selection
-                        onSelect(emp.id)
-                        setValue(emp.id)
+                        onSelect(currentValue)
+                        setValue(currentValue)
                         setOpen(false)
                     }}
                 >
@@ -85,3 +110,7 @@ export function EmployeeSelector({ employees, selectedId, onSelect }: EmployeeSe
     </Popover>
   )
 }
+
+// Import server action at top of file needed? No, importing it directly inside component file works if it's 'use client'.
+// But we need to import `searchEmployees`.
+import { searchEmployees } from '@/app/t/[tenantSlug]/admin/assignments/actions'

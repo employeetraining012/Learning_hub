@@ -15,7 +15,7 @@ export async function createCourse(formData: FormData, tenantId: string, tenantS
     const supabase = await createClient()
 
     const title = formData.get('title') as string
-    const description = formData.get('description') as string
+    const description = (formData.get('description') as string) || undefined
 
     const validation = courseSchema.safeParse({ title, description })
     if (!validation.success) {
@@ -31,6 +31,7 @@ export async function createCourse(formData: FormData, tenantId: string, tenantS
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'COURSE_CREATE',
         entityType: 'course',
         entityId: newCourse.id,
@@ -41,11 +42,11 @@ export async function createCourse(formData: FormData, tenantId: string, tenantS
     return { success: true }
 }
 
-export async function updateCourse(id: string, formData: FormData, tenantSlug: string) {
+export async function updateCourse(id: string, formData: FormData, tenantId: string, tenantSlug: string) {
     const supabase = await createClient()
 
     const title = formData.get('title') as string
-    const description = formData.get('description') as string
+    const description = (formData.get('description') as string) || undefined
 
     const validation = courseSchema.safeParse({ title, description })
     if (!validation.success) {
@@ -60,26 +61,29 @@ export async function updateCourse(id: string, formData: FormData, tenantSlug: s
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'COURSE_UPDATE',
         entityType: 'course',
         entityId: id,
-        metadata: { title, description }
+        metadata: { title, description, tenantId }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.courses)
     return { success: true }
 }
 
-export async function deleteCourse(id: string, tenantSlug: string) {
+export async function deleteCourse(id: string, tenantId: string, tenantSlug: string) {
     const supabase = await createClient()
     const { error } = await supabase.from('courses').delete().eq('id', id)
 
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'COURSE_DELETE',
         entityType: 'course',
-        entityId: id
+        entityId: id,
+        metadata: { tenantId }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.courses)

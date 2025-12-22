@@ -46,6 +46,9 @@ export const ROUTES = {
             dashboard: `/t/${slug}/employee`,
             course: (courseId: string) => `/t/${slug}/employee/courses/${courseId}`,
             module: (moduleId: string) => `/t/${slug}/employee/modules/${moduleId}`,
-        }
+            content: (contentId: string) => `/t/${slug}/employee/content/${contentId}`,
+            learn: (courseId: string, moduleId: string, contentId: string) =>
+                `/t/${slug}/employee/learn/${courseId}/${moduleId}/${contentId}`,
+        },
     })
 };

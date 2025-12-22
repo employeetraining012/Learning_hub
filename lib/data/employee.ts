@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/admin'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 
@@ -6,40 +7,96 @@ export const getMyAssignedCourses = cache(async (tenantId: string) => {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) return []
+    console.log('[getMyAssignedCourses] Starting fetch:', { tenantId, userId: user?.id })
 
-    // Use the new view for efficiency and correctness
-    const { data } = await supabase
-        .from('v_employee_effective_courses')
+    if (!user) {
+        console.log('[getMyAssignedCourses] No user found')
+        return []
+    }
+
+    // Use Admin Client to bypass RLS
+    const adminClient = createServiceRoleClient()
+
+    const { data, error } = await adminClient
+        .from('employee_course_assignments')
         .select(`
-            id:course_id,
-            title:course_title,
-            status:course_status,
-            description
+            courses!inner (
+                id,
+                title,
+                status,
+                description
+            )
         `)
         .eq('employee_id', user.id)
         .eq('tenant_id', tenantId)
-        .eq('course_status', 'published')
-        .order('course_title')
+        // .eq('courses.status', 'published') <--- Removed this filter
+        .order('title', { foreignTable: 'courses' })
 
-    return (data || []) as any[]
+    if (error) {
+        console.error("[getMyAssignedCourses] Error:", error)
+        return []
+    }
+
+    console.log(`[getMyAssignedCourses] Raw data:`, JSON.stringify(data, null, 2))
+    console.log(`[getMyAssignedCourses] Found ${data?.length || 0} assignments`)
+
+    // Transform flattened response
+    const courses = data?.map((item: any) => ({
+        id: item.courses.id,
+        title: item.courses.title,
+        status: item.courses.status,
+        description: item.courses.description
+    })) || []
+
+    console.log('[getMyAssignedCourses] Transformed courses:', JSON.stringify(courses, null, 2))
+    return courses
 })
 
 export const getCourseWithModules = cache(async (courseId: string) => {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // RLS filters courses. If access denied, data is null.
-    const { data: course } = await supabase
+    if (!user) return null
+
+    // 1. Verify Assignment + Get Tenant ID
+    // We must ensure the user actually has this course assigned
+    const adminClient = createServiceRoleClient()
+
+    const { data: assignment, error: assignError } = await adminClient
+        .from('employee_course_assignments')
+        .select('tenant_id')
+        .eq('employee_id', user.id)
+        .eq('course_id', courseId)
+        .single()
+
+    if (assignError || !assignment) {
+        console.error('[getCourseWithModules] Assignment check failed:', assignError)
+        return null
+    }
+
+    // 2. Fetch Course Details (bypassing RLS)
+    const { data: course, error: courseError } = await adminClient
         .from('courses')
         .select('*')
         .eq('id', courseId)
+        .eq('tenant_id', assignment.tenant_id)
         .single()
 
-    if (!course) return null // Or handle error
+    if (courseError || !course) {
+        console.error('[getCourseWithModules] Course fetch failed:', courseError)
+        return null
+    }
 
-    const { data: modules } = await supabase
+    // 3. Fetch Modules with their first content item (for direct navigation)
+    const { data: modules } = await adminClient
         .from('modules')
-        .select('*')
+        .select(`
+            *,
+            content_items (
+                id,
+                created_at
+            )
+        `)
         .eq('course_id', courseId)
         .order('sort_order')
 
@@ -48,21 +105,42 @@ export const getCourseWithModules = cache(async (courseId: string) => {
 
 export const getModuleWithContent = cache(async (moduleId: string) => {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // Need module + course info for breadcrumbs
-    const { data: moduleData } = await supabase
+    if (!user) return null
+
+    const adminClient = createServiceRoleClient()
+
+    // 1. Fetch Module + Course Info (bypassing RLS)
+    // We need to know the course_id to verify assignment
+    const { data: moduleData, error: moduleError } = await adminClient
         .from('modules')
         .select('*, courses(*)')
         .eq('id', moduleId)
         .single()
 
-    if (!moduleData) return null
+    if (moduleError || !moduleData) return null
 
-    const { data: content } = await supabase
+    // 2. Verify Assignment
+    // Is the USER assigned to the COURSE that this module belongs to?
+    const { data: assignment } = await adminClient
+        .from('employee_course_assignments')
+        .select('id')
+        .eq('employee_id', user.id)
+        .eq('course_id', moduleData.course_id)
+        .single()
+
+    if (!assignment) {
+        console.error('[getModuleWithContent] User not assigned to this course')
+        return null
+    }
+
+    // 3. Fetch Content
+    const { data: content } = await adminClient
         .from('content_items')
         .select('*')
         .eq('module_id', moduleId)
-    // .order('created_at') // or whatever order
+    // .order('created_at') 
 
     return { module: moduleData, content: content || [] }
 })

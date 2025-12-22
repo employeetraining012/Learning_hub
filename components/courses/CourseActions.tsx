@@ -20,7 +20,7 @@ export function CourseActions({ course }: { course: Course }) {
     if (!confirm('Are you sure you want to delete this course? All modules and content will be lost.')) return
     
     setLoading(true)
-    const result = await deleteCourse(course.id, tenantSlug)
+    const result = await deleteCourse(course.id, course.tenant_id, tenantSlug)
     setLoading(false)
     
     if (result?.error) {
@@ -35,7 +35,7 @@ export function CourseActions({ course }: { course: Course }) {
       <Button variant="outline" size="sm" asChild>
         <Link href={ROUTES.tenant(tenantSlug).admin.modules(course.id)}>Manage Modules</Link>
       </Button>
-      <CourseDialog course={course} trigger={<Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>} />
+      <CourseDialog course={course} tenantId={course.tenant_id} trigger={<Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>} />
       <Button variant="ghost" size="icon" onClick={handleDelete} disabled={loading}>
         <Trash2 className="h-4 w-4 text-red-500" />
       </Button>

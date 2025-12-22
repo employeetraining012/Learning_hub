@@ -44,7 +44,7 @@ export default async function ModuleDetailPage({ params }: { params: Promise<{ t
 
             <div>
                  <h2 className="text-lg font-semibold mb-4">Learning Materials</h2>
-                 <ContentItemList items={content} />
+                 <ContentItemList items={content} courseId={courseId} />
             </div>
         </div>
     )

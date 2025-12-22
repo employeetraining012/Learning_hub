@@ -26,6 +26,7 @@ export default function AssignmentsManager({
                     employees={employees} 
                     selectedId={selectedEmployeeId}
                     onSelect={setSelectedEmployeeId}
+                    tenantId={tenantId}
                 />
             </div>
             

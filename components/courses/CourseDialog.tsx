@@ -40,7 +40,7 @@ export function CourseDialog({
 
     let result
     if (course) {
-        result = await updateCourse(course.id, formData, tenantSlug)
+        result = await updateCourse(course.id, formData, tenantId || course.tenant_id, tenantSlug)
     } else {
         if (!tenantId) {
             toast.error('Missing tenant ID')

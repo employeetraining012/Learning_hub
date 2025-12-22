@@ -17,6 +17,7 @@ export async function createCohort(tenantId: string, tenantSlug: string, name: s
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'COHORT_CREATE',
         entityType: 'cohort',
         entityId: data.id,
@@ -37,6 +38,7 @@ export async function addMemberToCohort(tenantId: string, tenantSlug: string, co
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'COHORT_MEMBER_ADD',
         entityType: 'cohort',
         entityId: cohortId,
@@ -61,6 +63,7 @@ export async function assignCourseToCohort(tenantId: string, tenantSlug: string,
     if (error) return { error: error.message }
 
     await logAudit({
+        tenantId,
         action: 'COHORT_ASSIGNMENT_CREATE',
         entityType: 'cohort',
         entityId: cohortId,
