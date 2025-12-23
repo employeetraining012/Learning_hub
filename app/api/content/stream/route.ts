@@ -82,10 +82,21 @@ export async function GET(request: NextRequest) {
 
             return new NextResponse(arrayBuffer, { status: 200, headers })
         } else if (contentItem.url) {
+            // Check if it's a Google Drive URL and convert to download link if possible
+            let fetchUrl = contentItem.url
+            if (contentItem.url.includes('drive.google.com')) {
+                const match = contentItem.url.match(/\/file\/d\/([^/]+)/)
+                if (match && match[1]) {
+                    fetchUrl = `https://drive.google.com/uc?export=download&id=${match[1]}`
+                }
+            }
+
             // For external URLs, proxy the request
-            const response = await fetch(contentItem.url)
+            const response = await fetch(fetchUrl)
             if (!response.ok) {
-                return NextResponse.json({ error: 'Failed to fetch content' }, { status: 502 })
+                // If Google Drive download fails (e.g. large file warning or protected), fallback may be needed
+                // But for now we try to proxy.
+                return NextResponse.json({ error: 'Failed to fetch content from source' }, { status: 502 })
             }
 
             const arrayBuffer = await response.arrayBuffer()
@@ -95,6 +106,11 @@ export async function GET(request: NextRequest) {
             headers.set('Content-Type', contentType)
             headers.set('Content-Disposition', 'inline')
             headers.set('Cache-Control', 'private, no-cache, no-store, must-revalidate')
+
+            // If it was a Google Drive PDF, ensure type is PDF
+            if (fetchUrl.includes('drive.google.com') && !contentType.includes('pdf')) {
+                headers.set('Content-Type', 'application/pdf')
+            }
 
             return new NextResponse(arrayBuffer, { status: 200, headers })
         }

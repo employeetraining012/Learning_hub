@@ -11,7 +11,7 @@ const SecurePDFViewer = dynamic(
         ssr: false,
         loading: () => (
             <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                <div className="text-white">Loading PDF viewer...</div>
+                <div className="text-white">Loading Viewer...</div>
             </div>
         )
     }
@@ -19,13 +19,9 @@ const SecurePDFViewer = dynamic(
 
 interface PlayerProps {
     item: ContentNode
-    watermark?: {
-        name: string
-        email: string
-    }
 }
 
-export function Player({ item, watermark }: PlayerProps) {
+export function Player({ item }: PlayerProps) {
     if (!item.url) {
         return <div className="h-full w-full flex items-center justify-center bg-gray-100 text-gray-500">No URL provided</div>
     }
@@ -34,11 +30,13 @@ export function Player({ item, watermark }: PlayerProps) {
     const isGoogleDrive = item.url.includes('drive.google.com')
     const isGoogleSlides = item.url.includes('docs.google.com/presentation')
     
-    // PDFs: Use SecurePDFViewer (no iframe)
-    // Note: Google Drive PDFs still need special handling
-    const isPdf = item.type === 'pdf' || item.url.toLowerCase().endsWith('.pdf')
-    const isGoogleDrivePdf = isGoogleDrive && !isGoogleSlides
+    // Determine content types
+    // We treating Google Drive Files (that are not Slides) as PDFs/Images that should use SecureViewer if possible
+    const isVideo = item.type === 'video' || item.url.endsWith('.mp4')
+    const isPdf = item.type === 'pdf' || item.url.toLowerCase().endsWith('.pdf') || (isGoogleDrive && !isGoogleSlides && !isVideo)
     
+    // For now, if it's a PPT we might normally use Google Viewer, but if it's Google Drive based, we try SecureViewer
+    // If it's pure PPT file link, we use Google Viewer iframe
     const isPpt = item.type === 'ppt' || item.url.toLowerCase().endsWith('.ppt') || item.url.toLowerCase().endsWith('.pptx') || isGoogleSlides
     const isImage = item.type === 'image'
     
@@ -67,7 +65,7 @@ export function Player({ item, watermark }: PlayerProps) {
 
     const embedUrl = getEmbedUrl(item.url)
 
-    // YouTube: Keep iframe (acceptable, no URL leak)
+    // YouTube: Keep iframe (acceptable)
     if (isYouTube) {
         return (
             <div className="w-full h-full bg-black flex items-center justify-center">
@@ -83,54 +81,25 @@ export function Player({ item, watermark }: PlayerProps) {
         )
     }
 
-    // PDF: Use SecurePDFViewer (canvas-based, no browser controls)
-    if (isPdf && !isGoogleDrivePdf) {
-        // For direct PDF URLs, use the secure viewer
-        // The URL could be proxied through /api/content/stream for extra security
-        return (
+    // PDF & Google Drive Files: Use SecurePDFViewer (canvas-based)
+    // This removes the iframe and pop-out button by proxying the file content
+    if (isPdf) {
+         // We use the proxy route for ALL pseudo-PDFs to ensure we get bytes for canvas
+         // The proxy will handle Google Drive ID extraction
+         const proxyUrl = `/api/content/stream?contentItemId=${item.id}`
+         
+         return (
             <div className="w-full h-full">
-                <SecurePDFViewer url={item.url} watermark={watermark} />
+                <SecurePDFViewer url={proxyUrl} />
             </div>
         )
     }
 
-    // Google Drive PDF: Still needs iframe due to Google's restrictions
-    // But we can proxy through our API for non-Google sources
-    if (isGoogleDrivePdf) {
-        const match = item.url.match(/\/file\/d\/([^/]+)/)
-        const previewUrl = match && match[1] 
-            ? `https://drive.google.com/file/d/${match[1]}/preview`
-            : item.url.replace('/view', '/preview')
-        
-        return (
-            <div className="w-full h-full bg-gray-100 relative">
-                <iframe src={previewUrl} className="w-full h-full border-0" />
-                {/* Watermark overlay for Google Drive content */}
-                {watermark && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                        <div className="text-black/5 text-lg font-bold rotate-[-30deg] whitespace-nowrap select-none"
-                             style={{ fontSize: '1.5rem', letterSpacing: '0.3em' }}>
-                            {watermark.name} • {watermark.email}
-                        </div>
-                    </div>
-                )}
-            </div>
-        )
-    }
-
-    // PPT/Slides: Keep iframe (Google Slides has limited API)
+    // PPT/Slides: Keep iframe
     if (isPpt) {
         return (
             <div className="w-full h-full bg-gray-100 relative">
                 <iframe src={embedUrl} className="w-full h-full border-0" />
-                {watermark && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                        <div className="text-black/5 text-lg font-bold rotate-[-30deg] whitespace-nowrap select-none"
-                             style={{ fontSize: '1.5rem', letterSpacing: '0.3em' }}>
-                            {watermark.name} • {watermark.email}
-                        </div>
-                    </div>
-                )}
             </div>
         )
     }
@@ -140,14 +109,6 @@ export function Player({ item, watermark }: PlayerProps) {
         return (
             <div className="w-full h-full bg-gray-900 flex items-center justify-center p-4 relative">
                 <img src={item.url} alt={item.title} className="max-w-full max-h-full object-contain" />
-                {watermark && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                        <div className="text-white/10 text-lg font-bold rotate-[-30deg] whitespace-nowrap select-none"
-                             style={{ fontSize: '1.5rem', letterSpacing: '0.3em' }}>
-                            {watermark.name} • {watermark.email}
-                        </div>
-                    </div>
-                )}
             </div>
         )
     }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -10,13 +10,9 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 interface SecurePDFViewerProps {
     url: string
-    watermark?: {
-        name: string
-        email: string
-    }
 }
 
-export function SecurePDFViewer({ url, watermark }: SecurePDFViewerProps) {
+export function SecurePDFViewer({ url }: SecurePDFViewerProps) {
     const [numPages, setNumPages] = useState<number>(0)
     const [pageNumber, setPageNumber] = useState<number>(1)
     const [scale, setScale] = useState<number>(1.2)
@@ -30,7 +26,7 @@ export function SecurePDFViewer({ url, watermark }: SecurePDFViewerProps) {
 
     const onDocumentLoadError = useCallback((error: Error) => {
         console.error('PDF Load Error:', error)
-        setError('Failed to load PDF document')
+        setError('Failed to load document')
         setLoading(false)
     }, [])
 
@@ -38,9 +34,6 @@ export function SecurePDFViewer({ url, watermark }: SecurePDFViewerProps) {
     const goToNextPage = () => setPageNumber(prev => Math.min(prev + 1, numPages))
     const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 3))
     const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5))
-
-    // Generate timestamp for watermark
-    const timestamp = new Date().toLocaleString()
 
     if (error) {
         return (
@@ -126,18 +119,6 @@ export function SecurePDFViewer({ url, watermark }: SecurePDFViewerProps) {
                         className="shadow-2xl"
                     />
                 </Document>
-
-                {/* Watermark Overlay */}
-                {watermark && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
-                        <div 
-                            className="text-white/10 text-lg font-bold rotate-[-30deg] whitespace-nowrap select-none"
-                            style={{ fontSize: '2rem', letterSpacing: '0.5em' }}
-                        >
-                            {watermark.name} • {watermark.email} • {timestamp}
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     )
