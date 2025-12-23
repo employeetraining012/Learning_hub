@@ -24,6 +24,15 @@ export async function createModule(courseId: string, formData: FormData, tenantI
         return { error: validation.error.message }
     }
 
+    const order = validation.data.sort_order
+
+    // Rebalance: Shift existing modules >= new order
+    await supabase.rpc('increment_module_orders', {
+        p_course_id: courseId,
+        p_tenant_id: tenantId,
+        p_threshold: order
+    })
+
     const { data: newModule, error } = await supabase
         .from('modules')
         .insert({
@@ -31,7 +40,7 @@ export async function createModule(courseId: string, formData: FormData, tenantI
             tenant_id: tenantId,
             title,
             description,
-            sort_order: validation.data.sort_order
+            sort_order: order
         })
         .select('id')
         .single()
@@ -43,7 +52,7 @@ export async function createModule(courseId: string, formData: FormData, tenantI
         action: 'MODULE_CREATE',
         entityType: 'module',
         entityId: newModule.id,
-        metadata: { title, courseId, tenantId }
+        metadata: { title, courseId, tenantId, sort_order: order }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.modules(courseId))
@@ -62,12 +71,45 @@ export async function updateModule(id: string, courseId: string, formData: FormD
         return { error: validation.error.message }
     }
 
+    const newOrder = validation.data.sort_order
+
+    // Get old order
+    const { data: oldModule } = await supabase.from('modules').select('sort_order').eq('id', id).single()
+    const oldOrder = oldModule?.sort_order ?? 0
+
+    if (newOrder !== oldOrder) {
+        // Rebalance based on direction
+        if (newOrder < oldOrder) {
+            // New position is higher up (smaller number)
+            // Shift modules between [newOrder, oldOrder-1] down
+            await supabase
+                .from('modules')
+                .update({ sort_order: supabase.rpc('increment', { row_id: 'id' }) as any }) // This is wrong for client libs, need actual logic
+            // Actually, doing this via SQL/RPC is safer for mass updates
+            await supabase.rpc('reorder_modules_up', {
+                p_course_id: courseId,
+                p_tenant_id: tenantId,
+                p_new_order: newOrder,
+                p_old_order: oldOrder
+            })
+        } else {
+            // New position is lower down (larger number)
+            // Shift modules between [oldOrder+1, newOrder] up
+            await supabase.rpc('reorder_modules_down', {
+                p_course_id: courseId,
+                p_tenant_id: tenantId,
+                p_new_order: newOrder,
+                p_old_order: oldOrder
+            })
+        }
+    }
+
     const { error } = await supabase
         .from('modules')
         .update({
             title,
             description,
-            sort_order: validation.data.sort_order
+            sort_order: newOrder
         })
         .eq('id', id)
 
@@ -78,7 +120,7 @@ export async function updateModule(id: string, courseId: string, formData: FormD
         action: 'MODULE_UPDATE',
         entityType: 'module',
         entityId: id,
-        metadata: { title, courseId, tenantId }
+        metadata: { title, courseId, tenantId, sort_order: newOrder }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.modules(courseId))

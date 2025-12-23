@@ -37,9 +37,9 @@ export default async function ModuleDetailPage({ params }: { params: Promise<{ t
                 <span className="text-foreground font-medium truncate">{module.title}</span>
             </nav>
 
-             <div className="mb-8">
+             <div className="mb-8 p-4 bg-slate-50 rounded-xl border border-slate-100">
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">{module.title}</h1>
-                <p className="text-gray-600">{module.description}</p>
+                <p className="text-gray-600 break-words whitespace-pre-wrap leading-relaxed">{module.description}</p>
             </div>
 
             <div>

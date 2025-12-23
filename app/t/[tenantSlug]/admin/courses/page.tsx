@@ -52,7 +52,9 @@ export default async function CoursesPage({ params }: { params: Promise<{ tenant
             {courses?.map((course) => (
               <TableRow key={course.id}>
                 <TableCell className="font-medium">{course.title}</TableCell>
-                <TableCell>{course.description}</TableCell>
+                <TableCell className="max-w-[300px] break-words whitespace-pre-wrap">
+                    {course.description}
+                </TableCell>
                 <TableCell>{new Date(course.created_at).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">
                     <CourseActions course={course} />

@@ -39,6 +39,7 @@ export type ContentItem = {
     title: string;
     url: string;
     type: ContentItemType;
+    sort_order: number;
     content_source: 'external' | 'storage';
     storage_path?: string | null;
     mime_type?: string | null;

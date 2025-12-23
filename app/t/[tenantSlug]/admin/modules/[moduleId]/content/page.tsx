@@ -48,7 +48,7 @@ export default async function ContentPage({ params }: { params: Promise<{ tenant
     .select('*')
     .eq('module_id', moduleId)
     .eq('tenant_id', tenant.id)
-    .order('created_at', { ascending: true })
+    .order('sort_order', { ascending: true })
 
   // Type assertion for joined data if not fully typed
   const moduleInfo = moduleData as any
@@ -83,6 +83,7 @@ export default async function ContentPage({ params }: { params: Promise<{ tenant
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[80px]">Order</TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Source</TableHead>
@@ -93,7 +94,7 @@ export default async function ContentPage({ params }: { params: Promise<{ tenant
           <TableBody>
             {contentItems?.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
                         No content found. Add items.
                     </TableCell>
                 </TableRow>
@@ -105,7 +106,8 @@ export default async function ContentPage({ params }: { params: Promise<{ tenant
                     <TableCell>
                         <Icon className="w-4 h-4 text-muted-foreground" />
                     </TableCell>
-                    <TableCell className="font-medium">{item.title}</TableCell>
+                    <TableCell>{item.sort_order}</TableCell>
+                    <TableCell className="font-medium max-w-[200px] break-words">{item.title}</TableCell>
                     <TableCell className="capitalize">{item.type}</TableCell>
                     <TableCell className="capitalize">{item.content_source}</TableCell>
                     <TableCell className="max-w-[200px] truncate" title={item.content_source === 'storage' ? item.storage_path : item.url}>

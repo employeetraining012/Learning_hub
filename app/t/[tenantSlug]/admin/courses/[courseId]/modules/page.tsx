@@ -72,7 +72,9 @@ export default async function ModulesPage({ params }: { params: Promise<{ tenant
               <TableRow key={module.id}>
                 <TableCell>{module.sort_order}</TableCell>
                 <TableCell className="font-medium">{module.title}</TableCell>
-                <TableCell>{module.description}</TableCell>
+                <TableCell className="max-w-[400px] break-words whitespace-pre-wrap">
+                    {module.description}
+                </TableCell>
                 <TableCell>{new Date(module.created_at).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">
                     <ModuleActions module={module} courseId={courseId} />

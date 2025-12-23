@@ -23,29 +23,33 @@ export async function createContent(moduleId: string, formData: FormData, tenant
     const type = rawType ? rawType.toString() : null
     const content_source = (formData.get('content_source') as any) || 'external'
     const storage_path = (formData.get('storage_path') as string) || undefined
-
-    // Debug logging
-    console.log('=== createContent DEBUG ===', {
-        raw: { title: formData.get('title'), url: formData.get('url'), type: rawType, content_source: formData.get('content_source'), storage_path: formData.get('storage_path') },
-        processed: { title, url, type, content_source, storage_path }
-    })
+    const sort_order = formData.get('sort_order')
 
     // Check for required fields before validation
     if (!type) {
         return { error: 'Content type is required' }
     }
 
-    const validation = contentSchema.safeParse({
+    const validation = contentSchema.extend({ sort_order: z.coerce.number().int().default(0) }).safeParse({
         title,
         url: url || undefined,
         type,
         content_source,
-        storage_path
+        storage_path,
+        sort_order
     })
     if (!validation.success) {
-        console.error('Validation failed:', validation.error)
         return { error: helperZodError(validation.error) }
     }
+
+    const order = (validation.data as any).sort_order || 0
+
+    // Rebalance: Shift existing content >= new order
+    await supabase.rpc('increment_content_orders', {
+        p_module_id: moduleId,
+        p_tenant_id: tenantId,
+        p_threshold: order
+    })
 
     const { data: newItem, error } = await supabase
         .from('content_items')
@@ -56,7 +60,8 @@ export async function createContent(moduleId: string, formData: FormData, tenant
             url: content_source === 'external' ? url : '',
             type,
             content_source,
-            storage_path: content_source === 'storage' ? storage_path : null
+            storage_path: content_source === 'storage' ? storage_path : null,
+            sort_order: order
         })
         .select('id')
         .single()
@@ -68,7 +73,7 @@ export async function createContent(moduleId: string, formData: FormData, tenant
         action: 'CONTENT_CREATE',
         entityType: 'content',
         entityId: newItem.id,
-        metadata: { title, moduleId, tenantId }
+        metadata: { title, moduleId, tenantId, sort_order: order }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.content(moduleId))
@@ -81,20 +86,44 @@ export async function updateContent(id: string, moduleId: string, formData: Form
     const title = (formData.get('title') as string || '').trim()
     const url = (formData.get('url') as string || '').trim()
     const type = formData.get('type')?.toString() || undefined
-
-    // For update, we usually don't change source easily but we can support it
     const content_source = (formData.get('content_source') as any) || 'external'
     const storage_path = (formData.get('storage_path') as string) || undefined
+    const sort_order = formData.get('sort_order')
 
-    const validation = contentSchema.safeParse({
+    const validation = contentSchema.extend({ sort_order: z.coerce.number().int().default(0) }).safeParse({
         title,
         url: url || undefined,
         type,
         content_source,
-        storage_path
+        storage_path,
+        sort_order
     })
     if (!validation.success) {
         return { error: helperZodError(validation.error) }
+    }
+
+    const newOrder = (validation.data as any).sort_order || 0
+
+    // Get old order
+    const { data: oldItem } = await supabase.from('content_items').select('sort_order').eq('id', id).single()
+    const oldOrder = oldItem?.sort_order ?? 0
+
+    if (newOrder !== oldOrder) {
+        if (newOrder < oldOrder) {
+            await supabase.rpc('reorder_content_up', {
+                p_module_id: moduleId,
+                p_tenant_id: tenantId,
+                p_new_order: newOrder,
+                p_old_order: oldOrder
+            })
+        } else {
+            await supabase.rpc('reorder_content_down', {
+                p_module_id: moduleId,
+                p_tenant_id: tenantId,
+                p_new_order: newOrder,
+                p_old_order: oldOrder
+            })
+        }
     }
 
     const { error } = await supabase
@@ -104,7 +133,8 @@ export async function updateContent(id: string, moduleId: string, formData: Form
             url: content_source === 'external' ? url : '',
             type,
             content_source,
-            storage_path: content_source === 'storage' ? storage_path : null
+            storage_path: content_source === 'storage' ? storage_path : null,
+            sort_order: newOrder
         })
         .eq('id', id)
 
@@ -115,7 +145,7 @@ export async function updateContent(id: string, moduleId: string, formData: Form
         action: 'CONTENT_UPDATE',
         entityType: 'content',
         entityId: id,
-        metadata: { title, moduleId, tenantId }
+        metadata: { title, moduleId, tenantId, sort_order: newOrder }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.content(moduleId))
