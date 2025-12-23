@@ -11,7 +11,8 @@ export function Player({ item }: { item: ContentNode }) {
     }
 
     const isYouTube = item.type === 'youtube' || item.url.includes('youtube.com') || item.url.includes('youtu.be')
-    const isPdf = item.type === 'pdf' || item.url.toLowerCase().endsWith('.pdf')
+    const isGoogleDrive = item.url.includes('drive.google.com')
+    const isPdf = item.type === 'pdf' || item.url.toLowerCase().endsWith('.pdf') || isGoogleDrive
     const isPpt = item.type === 'ppt' || item.url.toLowerCase().endsWith('.ppt') || item.url.toLowerCase().endsWith('.pptx')
     const isImage = item.type === 'image'
     
@@ -23,6 +24,16 @@ export function Player({ item }: { item: ContentNode }) {
             else if (rawUrl.includes('v=')) videoId = rawUrl.split('v=')[1].split('&')[0]
             else if (rawUrl.includes('embed/')) videoId = rawUrl.split('embed/')[1].split('?')[0]
             return `https://www.youtube.com/embed/${videoId}`
+        }
+        // Google Drive: Convert sharing link to preview/embed link
+        if (isGoogleDrive) {
+            // Pattern: https://drive.google.com/file/d/FILE_ID/view?...
+            const match = rawUrl.match(/\/file\/d\/([^/]+)/)
+            if (match && match[1]) {
+                return `https://drive.google.com/file/d/${match[1]}/preview`
+            }
+            // Fallback for other Google Drive formats
+            return rawUrl.replace('/view', '/preview').replace('/edit', '/preview')
         }
         if (isPpt) {
             return `https://docs.google.com/gview?url=${encodeURIComponent(rawUrl)}&embedded=true`
