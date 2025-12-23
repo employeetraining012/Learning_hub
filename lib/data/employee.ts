@@ -140,7 +140,7 @@ export const getModuleWithContent = cache(async (moduleId: string) => {
         .from('content_items')
         .select('*')
         .eq('module_id', moduleId)
-    // .order('created_at') 
+        .order('sort_order', { ascending: true })
 
     return { module: moduleData, content: content || [] }
 })

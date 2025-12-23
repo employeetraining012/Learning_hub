@@ -45,11 +45,15 @@ export async function createContent(moduleId: string, formData: FormData, tenant
     const order = (validation.data as any).sort_order || 0
 
     // Rebalance: Shift existing content >= new order
-    await supabase.rpc('increment_content_orders', {
+    const { error: rpcError } = await supabase.rpc('increment_content_orders', {
         p_module_id: moduleId,
         p_tenant_id: tenantId,
         p_threshold: order
     })
+
+    if (rpcError) {
+        console.error('RPC Error (Content Create Rebalance):', rpcError)
+    }
 
     const { data: newItem, error } = await supabase
         .from('content_items')
@@ -110,19 +114,21 @@ export async function updateContent(id: string, moduleId: string, formData: Form
 
     if (newOrder !== oldOrder) {
         if (newOrder < oldOrder) {
-            await supabase.rpc('reorder_content_up', {
+            const { error: upErr } = await supabase.rpc('reorder_content_up', {
                 p_module_id: moduleId,
                 p_tenant_id: tenantId,
                 p_new_order: newOrder,
                 p_old_order: oldOrder
             })
+            if (upErr) console.error('RPC Error (reorder_content_up):', upErr)
         } else {
-            await supabase.rpc('reorder_content_down', {
+            const { error: downErr } = await supabase.rpc('reorder_content_down', {
                 p_module_id: moduleId,
                 p_tenant_id: tenantId,
                 p_new_order: newOrder,
                 p_old_order: oldOrder
             })
+            if (downErr) console.error('RPC Error (reorder_content_down):', downErr)
         }
     }
 

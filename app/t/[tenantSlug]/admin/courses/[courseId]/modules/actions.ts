@@ -27,11 +27,15 @@ export async function createModule(courseId: string, formData: FormData, tenantI
     const order = validation.data.sort_order
 
     // Rebalance: Shift existing modules >= new order
-    await supabase.rpc('increment_module_orders', {
+    const { error: rpcError } = await supabase.rpc('increment_module_orders', {
         p_course_id: courseId,
         p_tenant_id: tenantId,
         p_threshold: order
     })
+
+    if (rpcError) {
+        console.error('RPC Error (Module Create Rebalance):', rpcError)
+    }
 
     const { data: newModule, error } = await supabase
         .from('modules')
@@ -82,25 +86,23 @@ export async function updateModule(id: string, courseId: string, formData: FormD
         if (newOrder < oldOrder) {
             // New position is higher up (smaller number)
             // Shift modules between [newOrder, oldOrder-1] down
-            await supabase
-                .from('modules')
-                .update({ sort_order: supabase.rpc('increment', { row_id: 'id' }) as any }) // This is wrong for client libs, need actual logic
-            // Actually, doing this via SQL/RPC is safer for mass updates
-            await supabase.rpc('reorder_modules_up', {
+            const { error: upErr } = await supabase.rpc('reorder_modules_up', {
                 p_course_id: courseId,
                 p_tenant_id: tenantId,
                 p_new_order: newOrder,
                 p_old_order: oldOrder
             })
+            if (upErr) console.error('RPC Error (reorder_modules_up):', upErr)
         } else {
             // New position is lower down (larger number)
             // Shift modules between [oldOrder+1, newOrder] up
-            await supabase.rpc('reorder_modules_down', {
+            const { error: downErr } = await supabase.rpc('reorder_modules_down', {
                 p_course_id: courseId,
                 p_tenant_id: tenantId,
                 p_new_order: newOrder,
                 p_old_order: oldOrder
             })
+            if (downErr) console.error('RPC Error (reorder_modules_down):', downErr)
         }
     }
 
