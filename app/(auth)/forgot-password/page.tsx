@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 <Button type="submit" className="w-full h-12 rounded-full bg-black text-white hover:bg-gray-800 text-base font-medium" disabled={isPending}>
-                    {isPending ? 'Sending Code...' : 'Send Verification Code'}
+                    {isPending ? 'Sending Request...' : 'Send Request'}
                 </Button>
             </form>
         </div>
