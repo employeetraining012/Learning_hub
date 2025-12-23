@@ -1,7 +1,8 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Topbar } from '@/components/layout/Topbar'
 import { getTenantContext } from '@/lib/tenant/context'
-import { notFound } from 'next/navigation'
+import { ROUTES } from '@/lib/config/routes'
+import { notFound, redirect } from 'next/navigation'
 
 export default async function AdminLayout({
   children,
@@ -15,6 +16,13 @@ export default async function AdminLayout({
   
   if (!tenant) {
       notFound()
+  }
+
+  // RBAC: Only allow owner, admin, trainer to access admin routes
+  const allowedRoles = ['owner', 'admin', 'trainer']
+  if (!allowedRoles.includes(tenant.userRole)) {
+    // If user is an employee, redirect them to their dashboard
+    redirect(ROUTES.tenant(tenantSlug).employee.dashboard)
   }
 
   return (
