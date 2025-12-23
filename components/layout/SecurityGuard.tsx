@@ -26,24 +26,72 @@ export function SecurityGuard({ children }: { children: React.ReactNode }) {
 
         // 3. Disable DevTools Shortcuts & Copy/Paste Keyboard Shortcuts
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Block F12
+            // Block F12 (All browsers)
             if (e.key === 'F12') {
                 e.preventDefault()
+                return
             }
 
-            // Block Ctrl+Shift+I (Inspect), Ctrl+Shift+J (Console), Ctrl+Shift+C (Inspect Element)
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) {
+            // Block Ctrl+Shift+I (Windows/Linux) and Cmd+Shift+I (Mac) - Open DevTools
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
                 e.preventDefault()
+                return
             }
 
-            // Block Ctrl+U (View Source)
-            if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+            // Block Ctrl+Shift+J (Windows/Linux) and Cmd+Shift+J (Mac) - Console
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
                 e.preventDefault()
+                return
             }
 
-            // Block Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+S
+            // Block Ctrl+Shift+C (Windows/Linux) and Cmd+Shift+C (Mac) - Inspect Element
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c')) {
+                e.preventDefault()
+                return
+            }
+
+            // Block Ctrl+Shift+K (Firefox Console)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
+                e.preventDefault()
+                return
+            }
+
+            // Block Cmd+Option+I (Mac - Alternative DevTools shortcut)
+            if (e.metaKey && e.altKey && (e.key === 'I' || e.key === 'i')) {
+                e.preventDefault()
+                return
+            }
+
+            // Block Cmd+Option+J (Mac - Alternative Console shortcut)
+            if (e.metaKey && e.altKey && (e.key === 'J' || e.key === 'j')) {
+                e.preventDefault()
+                return
+            }
+
+            // Block Cmd+Option+C (Mac - Alternative Inspect shortcut)
+            if (e.metaKey && e.altKey && (e.key === 'C' || e.key === 'c')) {
+                e.preventDefault()
+                return
+            }
+
+            // Block Ctrl+U (View Source) - Windows/Linux
+            // Block Cmd+U (View Source) - Mac
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+                e.preventDefault()
+                return
+            }
+
+            // Block Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+S (Copy/Cut/Paste/Save)
+            // Block Cmd+C, Cmd+X, Cmd+V, Cmd+S on Mac
             if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'x' || e.key === 'v' || e.key === 's')) {
                 e.preventDefault()
+                return
+            }
+
+            // Block Cmd+A (Select All) on Mac, Ctrl+A on Windows/Linux
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+                e.preventDefault()
+                return
             }
         }
 
