@@ -42,6 +42,18 @@ export default async function LearnPage({
     // Calculate Navigation
     const { prevItem, nextItem } = computeNextPrev(tree, moduleId, contentItemId)
 
+    // Fetch user profile for watermark
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .single()
+
+    const watermark = profile ? {
+        name: profile.full_name || 'Employee',
+        email: profile.email || user.email || ''
+    } : undefined
+
     return (
         <div className="flex flex-col h-screen bg-white">
             <LearnHeader 
@@ -63,7 +75,7 @@ export default async function LearnPage({
                         <div className="w-full bg-black">
                              <div className="relative w-full pt-[56.25%]"> {/* 16:9 Aspect Ratio Hack */}
                                  <div className="absolute top-0 left-0 right-0 bottom-0">
-                                     <Player item={currentItem} />
+                                     <Player item={currentItem} watermark={watermark} />
                                  </div>
                              </div>
                         </div>

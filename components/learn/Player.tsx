@@ -2,10 +2,30 @@
 
 import React from 'react'
 import { ContentNode } from '@/lib/learn/course-tree'
-import { ExternalLink } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import dynamic from 'next/dynamic'
 
-export function Player({ item }: { item: ContentNode }) {
+// Dynamically import SecurePDFViewer to avoid SSR issues with react-pdf
+const SecurePDFViewer = dynamic(
+    () => import('./SecurePDFViewer').then(mod => mod.SecurePDFViewer),
+    { 
+        ssr: false,
+        loading: () => (
+            <div className="w-full h-full flex items-center justify-center bg-gray-900">
+                <div className="text-white">Loading PDF viewer...</div>
+            </div>
+        )
+    }
+)
+
+interface PlayerProps {
+    item: ContentNode
+    watermark?: {
+        name: string
+        email: string
+    }
+}
+
+export function Player({ item, watermark }: PlayerProps) {
     if (!item.url) {
         return <div className="h-full w-full flex items-center justify-center bg-gray-100 text-gray-500">No URL provided</div>
     }
@@ -13,12 +33,16 @@ export function Player({ item }: { item: ContentNode }) {
     const isYouTube = item.type === 'youtube' || item.url.includes('youtube.com') || item.url.includes('youtu.be')
     const isGoogleDrive = item.url.includes('drive.google.com')
     const isGoogleSlides = item.url.includes('docs.google.com/presentation')
-    const isGoogleDocs = item.url.includes('docs.google.com/document')
-    const isPdf = item.type === 'pdf' || item.url.toLowerCase().endsWith('.pdf') || (isGoogleDrive && !isGoogleSlides)
+    
+    // PDFs: Use SecurePDFViewer (no iframe)
+    // Note: Google Drive PDFs still need special handling
+    const isPdf = item.type === 'pdf' || item.url.toLowerCase().endsWith('.pdf')
+    const isGoogleDrivePdf = isGoogleDrive && !isGoogleSlides
+    
     const isPpt = item.type === 'ppt' || item.url.toLowerCase().endsWith('.ppt') || item.url.toLowerCase().endsWith('.pptx') || isGoogleSlides
     const isImage = item.type === 'image'
     
-    // Helper to get embed URL (reused from previous viewer logic but cleaner)
+    // Helper to get embed URL for YouTube/Slides
     const getEmbedUrl = (rawUrl: string) => {
         if (isYouTube) {
             let videoId = ''
@@ -27,8 +51,6 @@ export function Player({ item }: { item: ContentNode }) {
             else if (rawUrl.includes('embed/')) videoId = rawUrl.split('embed/')[1].split('?')[0]
             return `https://www.youtube.com/embed/${videoId}`
         }
-        // Google Slides: Convert to embed link
-        // Pattern: https://docs.google.com/presentation/d/PRESENTATION_ID/edit or /view
         if (isGoogleSlides) {
             const match = rawUrl.match(/\/presentation\/d\/([^/]+)/)
             if (match && match[1]) {
@@ -36,17 +58,7 @@ export function Player({ item }: { item: ContentNode }) {
             }
             return rawUrl.replace('/edit', '/embed').replace('/view', '/embed')
         }
-        // Google Drive: Convert sharing link to preview/embed link
-        if (isGoogleDrive) {
-            // Pattern: https://drive.google.com/file/d/FILE_ID/view?...
-            const match = rawUrl.match(/\/file\/d\/([^/]+)/)
-            if (match && match[1]) {
-                return `https://drive.google.com/file/d/${match[1]}/preview`
-            }
-            // Fallback for other Google Drive formats
-            return rawUrl.replace('/view', '/preview').replace('/edit', '/preview')
-        }
-        // External PPT files (not Google)
+        // External PPT files (not Google) - use Google Docs viewer
         if (isPpt && !isGoogleSlides) {
             return `https://docs.google.com/gview?url=${encodeURIComponent(rawUrl)}&embedded=true`
         }
@@ -55,6 +67,7 @@ export function Player({ item }: { item: ContentNode }) {
 
     const embedUrl = getEmbedUrl(item.url)
 
+    // YouTube: Keep iframe (acceptable, no URL leak)
     if (isYouTube) {
         return (
             <div className="w-full h-full bg-black flex items-center justify-center">
@@ -70,18 +83,71 @@ export function Player({ item }: { item: ContentNode }) {
         )
     }
 
-    if (isPdf || isPpt) {
+    // PDF: Use SecurePDFViewer (canvas-based, no browser controls)
+    if (isPdf && !isGoogleDrivePdf) {
+        // For direct PDF URLs, use the secure viewer
+        // The URL could be proxied through /api/content/stream for extra security
         return (
-            <div className="w-full h-full bg-gray-100">
-                <iframe src={embedUrl} className="w-full h-full" />
+            <div className="w-full h-full">
+                <SecurePDFViewer url={item.url} watermark={watermark} />
             </div>
         )
     }
 
+    // Google Drive PDF: Still needs iframe due to Google's restrictions
+    // But we can proxy through our API for non-Google sources
+    if (isGoogleDrivePdf) {
+        const match = item.url.match(/\/file\/d\/([^/]+)/)
+        const previewUrl = match && match[1] 
+            ? `https://drive.google.com/file/d/${match[1]}/preview`
+            : item.url.replace('/view', '/preview')
+        
+        return (
+            <div className="w-full h-full bg-gray-100 relative">
+                <iframe src={previewUrl} className="w-full h-full border-0" />
+                {/* Watermark overlay for Google Drive content */}
+                {watermark && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                        <div className="text-black/5 text-lg font-bold rotate-[-30deg] whitespace-nowrap select-none"
+                             style={{ fontSize: '1.5rem', letterSpacing: '0.3em' }}>
+                            {watermark.name} • {watermark.email}
+                        </div>
+                    </div>
+                )}
+            </div>
+        )
+    }
+
+    // PPT/Slides: Keep iframe (Google Slides has limited API)
+    if (isPpt) {
+        return (
+            <div className="w-full h-full bg-gray-100 relative">
+                <iframe src={embedUrl} className="w-full h-full border-0" />
+                {watermark && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                        <div className="text-black/5 text-lg font-bold rotate-[-30deg] whitespace-nowrap select-none"
+                             style={{ fontSize: '1.5rem', letterSpacing: '0.3em' }}>
+                            {watermark.name} • {watermark.email}
+                        </div>
+                    </div>
+                )}
+            </div>
+        )
+    }
+
+    // Image
     if (isImage) {
         return (
-            <div className="w-full h-full bg-gray-900 flex items-center justify-center p-4">
+            <div className="w-full h-full bg-gray-900 flex items-center justify-center p-4 relative">
                 <img src={item.url} alt={item.title} className="max-w-full max-h-full object-contain" />
+                {watermark && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                        <div className="text-white/10 text-lg font-bold rotate-[-30deg] whitespace-nowrap select-none"
+                             style={{ fontSize: '1.5rem', letterSpacing: '0.3em' }}>
+                            {watermark.name} • {watermark.email}
+                        </div>
+                    </div>
+                )}
             </div>
         )
     }
