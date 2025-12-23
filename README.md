@@ -1,73 +1,82 @@
-# Employee Learning Hub
+# LearningHub 🎓
+> The Enterprise AI-Powered Learning Management System for the Modern Workforce.
 
-## Overview
-A Next.js + Supabase application for managing employee learning courses.
-**Status**: Phase 3 Complete (Operational Hardening).
+LearningHub is a premium, multi-tenant learning platform designed to streamline employee onboarding and continuous training. Built with a focus on visual excellence and seamless user experience, it combines a high-tech "Cyberpunk/VR" aesthetic with robust enterprise features.
 
-## Features
-- **Authentication**: Email/Password + Role Management (Admin/Employee).
-- **Admin Portal**: 
-  - Manage Courses, Modules, Content.
-  - **Employee Management**: Invite, Edit, Toggle Active.
-  - **Assignments**: Assign courses to employees.
-  - **Audit Logs**: Track all system changes.
-  - **Bulk Import**: JSON import for courses.
-- **Employee Portal**: 
-  - View assigned courses only.
-  - Read-only access to learning content.
-- **Security**: Strict RLS + Service Role for User Mgmt.
+## ✨ Highlights
 
-## Setup Instructions
+### 🎨 Premium Authentication Experience
+- **Dynamic Theming**: Page-specific color palettes (Red for Login, Cyan for Requesting Access, Purple for Recovery).
+- **Floating Card Layout**: A modern, centered glassmorphic interface on a dark, gradient-rich background.
+- **Request Access Flow**: Controlled onboarding where users submit requests directly to administrators.
 
-### 1. Supabase Project Setup
-1. Create a new project at [Supabase](https://supabase.com).
-2. Go to **Project Settings > API**.
-3. Copy **Project URL**, **anon public key**, and **service_role secret**.
+### 🏢 Enterprise Administration
+- **Multi-Tenant Architecture**: Secure, isolated environments for different departments or organizations.
+- **Course & Module Builder**: Comprehensive tools to create hierarchical learning paths.
+- **Employee Management**: Granular control over user roles (Admin, Employee, Trainer) and active status.
+- **Assignments Engine**: Direct mapping of courses to specific employees or cohorts.
 
-### 2. Environment Variables
-1. Copy `.env.local.example` to `.env.local`.
-2. Add:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=...
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-   SUPABASE_SERVICE_ROLE_KEY=...  # Required for User Management
-   ```
+### 📖 Intelligent Learning Player
+- **Rich Content Support**: Seamlessly embed Google Drive PDFs, Google Slides, Videos, and specialized documents.
+- **Smart URL Detection**: Automatically transforms sharing links into optimized, in-app embedded previews.
+- **Responsive Navigation**: Fast, fluid transitions between modules and content pieces.
 
-### 3. Database Migration
-Run these SQL scripts in order via Supabase SQL Editor:
-1. `db/migrations/00_init_schema.sql` (Base Schema)
-2. `db/migrations/01_assignments_schema.sql` (Assignments)
-3. `db/migrations/02_audit_schema.sql` (Audit Logs)
-4. `db/policies/phase2_rls.sql` (Strict RLS)
+## 🛠 Tech Stack
 
-### 4. Create First Admin
-1. Sign up a new user via `/signup`.
-2. In Supabase **Table Editor > profiles**, change `role` to `admin` and `active` to `TRUE`.
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, Turbopack)
+- **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL + RLS)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Deployment**: [Vercel](https://vercel.com/) (Edge-Ready Middleware)
 
-### 5. Running the App
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- A Supabase Project
+
+### 1. Environment Configuration
+Create a `.env.local` file in the root directory:
+```env
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key # For Admin operations
+```
+
+### 2. Database Setup
+Execute the SQL migrations found in `db/migrations/` in the following order using the Supabase SQL Editor:
+1. `00_init_schema.sql`
+2. `01_assignments_schema.sql`
+3. `02_audit_schema.sql`
+4. Apply RLS policies from `db/policies/`.
+
+### 3. Installation
 ```bash
 npm install
 npm run dev
 ```
 
-## Testing & Verification
+## 📁 Project Structure
 
-### Manual Test Plan
-1. **Users**:
-   - Go to `/admin/employees`. Click "Add Employee".
-   - Create a user. Verify they appear in the list.
-2. **Bulk Import**:
-   - Go to `/admin/tools/import`.
-   - Paste JSON from `db/seed/example_import.json` (create this if needed or use simple JSON).
-   ```json
-   { "courses": [{ "title": "Test Course", "modules": [] }] }
-   ```
-3. **Audit**:
-   - Go to `/admin/audit`.
-   - Verify that your Create User and Import actions are logged.
-4. **Assignments & Access**:
-   - Verify standard Phase 2 assignment flows still work.
+```text
+├── app/                  # Next.js App Router (Layouts, Pages, Routes)
+├── components/           # Reusable UI components (shadcn/ui + Custom)
+│   ├── auth/             # Brand-specific Auth components
+│   ├── learn/            # Multimedia Content Player logic
+│   └── admin/            # Advanced Management dashboards
+├── lib/                  # Backend utilities, Supabase clients, site config
+├── db/                   # SQL Schemas, Migrations, and Seed data
+├── public/               # Static assets & Premium background imagery
+└── types/                # TypeScript interfaces and DB definitions
+```
 
-### Troubleshooting
-- **User Creation Failed?**: Check `SUPABASE_SERVICE_ROLE_KEY` is in `.env.local` and restart server.
-- **Audit Logs Empty?**: Ensure policies in `02_audit_schema.sql` ran correctly.
+## 🔒 Security
+LearningHub employs strict **Row Level Security (RLS)** in Supabase to ensure that:
+- Employees can only access courses assigned to them.
+- Admins have exclusive access to tenant-level configuration and audit logs.
+- Middleware is Edge-optimized for secure session management without database overhead.
+
+---
+*Created with passion for future-focused education.*
