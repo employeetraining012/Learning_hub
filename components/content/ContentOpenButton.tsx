@@ -87,14 +87,6 @@ export function ContentOpenButton({
                 <DialogHeader className="p-4 border-b bg-white">
                     <div className="flex items-center justify-between">
                         <DialogTitle className="truncate pr-8">{title || 'Content Viewer'}</DialogTitle>
-                        <a 
-                            href={externalUrl || activeUrl || '#'} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors"
-                        >
-                            Open Original <ExternalLink className="w-3 h-3" />
-                        </a>
                     </div>
                 </DialogHeader>
                 

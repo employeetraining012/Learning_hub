@@ -30,12 +30,7 @@ export function ContentActions({ content, moduleId, tenantId }: { content: Conte
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="ghost" size="icon" asChild>
-        <Link href={content.url} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="h-4 w-4" />
-        </Link>
-      </Button>
+    <div className="flex items-center justify-center gap-2">
       <ContentDialog content={content} moduleId={moduleId} trigger={<Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>} />
       <Button variant="ghost" size="icon" onClick={handleDelete} disabled={loading}>
         <Trash2 className="h-4 w-4 text-red-500" />

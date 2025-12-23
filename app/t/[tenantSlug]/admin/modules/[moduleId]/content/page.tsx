@@ -74,7 +74,11 @@ export default async function ContentPage({ params }: { params: Promise<{ tenant
             <h1 className="text-3xl font-bold tracking-tight">
                 {moduleInfo?.title || 'Module'} / Content
             </h1>
-            <ContentDialog moduleId={moduleId} tenantId={tenant.id} />
+            <ContentDialog 
+                moduleId={moduleId} 
+                tenantId={tenant.id} 
+                nextOrder={(contentItems?.length || 0) + 1}
+            />
         </div>
       </div>
 

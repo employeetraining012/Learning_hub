@@ -30,12 +30,14 @@ export function ContentDialog({
     moduleId, 
     content, 
     trigger,
-    tenantId
+    tenantId,
+    nextOrder
 }: { 
     moduleId: string, 
     content?: ContentItem, 
     trigger?: React.ReactNode,
-    tenantId?: string 
+    tenantId?: string,
+    nextOrder?: number
 }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -45,6 +47,8 @@ export function ContentDialog({
   
   const params = useParams()
   const tenantSlug = params.tenantSlug as string
+
+  const defaultOrder = content?.sort_order ?? (nextOrder || 1)
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -140,7 +144,7 @@ export function ContentDialog({
             </div>
             <div className="grid gap-2">
                 <Label htmlFor="sort_order">Sort Order</Label>
-                <Input id="sort_order" name="sort_order" type="number" defaultValue={content?.sort_order ?? 0} required />
+                <Input id="sort_order" name="sort_order" type="number" defaultValue={defaultOrder} required />
             </div>
             <input type="hidden" name="type" value={type} />
             </div>

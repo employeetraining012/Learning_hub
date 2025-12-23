@@ -1,3 +1,4 @@
+import { SecurityGuard } from '@/components/layout/SecurityGuard'
 
 import { createClient } from '@/lib/supabase/server'
 import { getTenantContext } from '@/lib/tenant/context'
@@ -35,8 +36,10 @@ export default async function TenantLayout({
 
   // 2. If valid, render children
   return (
-    <>
-      {children}
-    </>
+    <SecurityGuard>
+      <div className="min-h-screen bg-background">
+        {children}
+      </div>
+    </SecurityGuard>
   )
 }

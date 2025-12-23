@@ -90,12 +90,7 @@ export function Player({ item }: { item: ContentNode }) {
     return (
         <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
             <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-            <p className="text-gray-500 mb-6 max-w-md">This content is hosted externally. You can view it by clicking the button below.</p>
-            <Button asChild size="lg">
-                <a href={item.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                    Open in New Tab <ExternalLink className="w-4 h-4" />
-                </a>
-            </Button>
+            <p className="text-gray-500 max-w-md">This content is hosted externally and restricted for direct viewing.</p>
         </div>
     )
 }
