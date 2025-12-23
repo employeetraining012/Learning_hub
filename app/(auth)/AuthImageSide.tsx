@@ -1,15 +1,15 @@
-'use client'
-
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
 import { GraduationCap } from 'lucide-react'
-import { ROUTES } from '@/lib/config/routes'
 
-export function AuthImageSide() {
+interface AuthImageSideProps {
+    imageSrc: string
+}
+
+export function AuthImageSide({ imageSrc }: AuthImageSideProps) {
     return (
       <div className="hidden lg:flex relative h-full w-full bg-black items-center justify-center overflow-hidden">
         <Image
-          src="/auth-vr-headset.png"
+          src={imageSrc}
           alt="Authentication Background"
           fill
           className="object-cover"
