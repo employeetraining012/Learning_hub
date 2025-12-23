@@ -48,7 +48,7 @@ export default async function ContentPage({ params }: { params: Promise<{ tenant
     .select('*')
     .eq('module_id', moduleId)
     .eq('tenant_id', tenant.id)
-    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
 
   // Type assertion for joined data if not fully typed
   const moduleInfo = moduleData as any

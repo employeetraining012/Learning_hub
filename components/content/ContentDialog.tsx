@@ -142,10 +142,6 @@ export function ContentDialog({
                     placeholder="https://" 
                 />
             </div>
-            <div className="grid gap-2">
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input id="sort_order" name="sort_order" type="number" defaultValue={defaultOrder} required />
-            </div>
             <input type="hidden" name="type" value={type} />
             </div>
             <DialogFooter>
