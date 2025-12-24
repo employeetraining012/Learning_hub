@@ -3,6 +3,8 @@ import { getTenantContext } from '@/lib/tenant/context'
 import { notFound } from 'next/navigation'
 import { ProgressTrackingClient } from '@/components/admin/ProgressTrackingClient'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ProgressTrackingPage({ params }: { params: Promise<{ tenantSlug: string }> }) {
     const { tenantSlug } = await params
     const tenant = await getTenantContext(tenantSlug)
@@ -26,7 +28,7 @@ export default async function ProgressTrackingPage({ params }: { params: Promise
     // Filter to only employees (not admins/owners)
     const employeeList = employees
         ?.filter((e: any) => {
-            const role = e.profiles.role?.toLowerCase()
+            const role = String(e.profiles.role || '').toLowerCase().trim()
             return role === 'employee'
         })
         .map((e: any) => ({
