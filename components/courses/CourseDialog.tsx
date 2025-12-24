@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import { createCourse, updateCourse } from '@/app/t/[tenantSlug]/admin/courses/actions'
 import { toast } from 'sonner'
 import { Course } from '@/types/db'
@@ -30,6 +31,7 @@ export function CourseDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [hasImage, setHasImage] = useState(!!course?.image_url)
   const params = useParams()
   const tenantSlug = params.tenantSlug as string
 
@@ -37,6 +39,7 @@ export function CourseDialog({
     event.preventDefault()
     setLoading(true)
     const formData = new FormData(event.currentTarget)
+    formData.set('has_image', hasImage.toString())
 
     let result
     if (course) {
@@ -65,7 +68,7 @@ export function CourseDialog({
       <DialogTrigger asChild>
         {trigger || <Button>Create Course</Button>}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{course ? 'Edit Course' : 'Create Course'}</DialogTitle>
           <DialogDescription>
@@ -82,6 +85,36 @@ export function CourseDialog({
                 <Label htmlFor="description">Description</Label>
                 <Textarea id="description" name="description" defaultValue={course?.description || ''} />
             </div>
+            
+            {/* Image Toggle */}
+            <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                    <Label htmlFor="has_image">Course Image</Label>
+                    <p className="text-xs text-muted-foreground">Add a cover image for this course</p>
+                </div>
+                <Switch
+                    id="has_image"
+                    checked={hasImage}
+                    onCheckedChange={setHasImage}
+                />
+            </div>
+
+            {/* Image URL Input (conditional) */}
+            {hasImage && (
+                <div className="grid gap-2">
+                    <Label htmlFor="image_url">Image URL</Label>
+                    <Input 
+                        id="image_url" 
+                        name="image_url" 
+                        type="url"
+                        placeholder="https://example.com/image.jpg"
+                        defaultValue={course?.image_url || ''} 
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Enter a direct link to an image (JPG, PNG, WebP)
+                    </p>
+                </div>
+            )}
             </div>
             <DialogFooter>
             <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>

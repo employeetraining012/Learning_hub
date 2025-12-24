@@ -13,6 +13,7 @@ export type Course = {
     tenant_id: string;
     title: string;
     description: string | null;
+    image_url: string | null;
     status: 'draft' | 'published' | 'archived';
     published_at?: string | null;
     created_at: string;

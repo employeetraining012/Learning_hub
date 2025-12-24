@@ -9,6 +9,7 @@ import { ROUTES } from '@/lib/config/routes'
 const courseSchema = z.object({
     title: z.string().min(1, "Title is required"),
     description: z.string().optional(),
+    image_url: z.string().url().optional().or(z.literal('')),
 })
 
 export async function createCourse(formData: FormData, tenantId: string, tenantSlug: string) {
@@ -16,15 +17,17 @@ export async function createCourse(formData: FormData, tenantId: string, tenantS
 
     const title = formData.get('title') as string
     const description = (formData.get('description') as string) || undefined
+    const hasImage = formData.get('has_image') === 'true'
+    const image_url = hasImage ? (formData.get('image_url') as string) || null : null
 
-    const validation = courseSchema.safeParse({ title, description })
+    const validation = courseSchema.safeParse({ title, description, image_url: image_url || '' })
     if (!validation.success) {
         return { error: helperZodError(validation.error) }
     }
 
     const { data: newCourse, error } = await supabase
         .from('courses')
-        .insert({ title, description, tenant_id: tenantId, status: 'draft' })
+        .insert({ title, description, image_url, tenant_id: tenantId, status: 'draft' })
         .select('id')
         .single()
 
@@ -47,15 +50,17 @@ export async function updateCourse(id: string, formData: FormData, tenantId: str
 
     const title = formData.get('title') as string
     const description = (formData.get('description') as string) || undefined
+    const hasImage = formData.get('has_image') === 'true'
+    const image_url = hasImage ? (formData.get('image_url') as string) || null : null
 
-    const validation = courseSchema.safeParse({ title, description })
+    const validation = courseSchema.safeParse({ title, description, image_url: image_url || '' })
     if (!validation.success) {
         return { error: helperZodError(validation.error) }
     }
 
     const { error } = await supabase
         .from('courses')
-        .update({ title, description })
+        .update({ title, description, image_url })
         .eq('id', id)
 
     if (error) return { error: error.message }
@@ -65,7 +70,7 @@ export async function updateCourse(id: string, formData: FormData, tenantId: str
         action: 'COURSE_UPDATE',
         entityType: 'course',
         entityId: id,
-        metadata: { title, description, tenantId }
+        metadata: { title, description, image_url, tenantId }
     })
 
     revalidatePath(ROUTES.tenant(tenantSlug).admin.courses)
