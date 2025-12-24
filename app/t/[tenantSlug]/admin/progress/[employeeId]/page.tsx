@@ -62,8 +62,7 @@ export default async function EmployeeProgressPage({
         .select(`
             courses (
                 id,
-                title,
-                description
+                title
             )
         `)
         .eq('employee_id', employeeId)
@@ -162,13 +161,8 @@ export default async function EmployeeProgressPage({
                         )}
                         {coursesWithProgress.map((course) => (
                             <TableRow key={course.id}>
-                                <TableCell>
-                                    <div>
-                                        <div className="font-medium">{course.title}</div>
-                                        {course.description && (
-                                            <div className="text-xs text-gray-500 line-clamp-1">{course.description}</div>
-                                        )}
-                                    </div>
+                                <TableCell className="font-medium">
+                                    {course.title}
                                 </TableCell>
                                 <TableCell>
                                     <ProgressBar percentage={course.progress_percentage} />

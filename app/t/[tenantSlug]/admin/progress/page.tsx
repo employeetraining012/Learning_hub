@@ -1,17 +1,7 @@
 import { createServiceRoleClient } from '@/lib/supabase/admin'
 import { getTenantContext } from '@/lib/tenant/context'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ROUTES } from '@/lib/config/routes'
-import { ChevronRight } from 'lucide-react'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
+import { ProgressTrackingClient } from '@/components/admin/ProgressTrackingClient'
 
 export default async function ProgressTrackingPage({ params }: { params: Promise<{ tenantSlug: string }> }) {
     const { tenantSlug } = await params
@@ -33,7 +23,7 @@ export default async function ProgressTrackingPage({ params }: { params: Promise
         `)
         .eq('tenant_id', tenant.id)
 
-    // Filter to only employees (not admins)
+    // Filter to only employees (not admins/owners)
     const employeeList = employees
         ?.filter((e: any) => e.profiles.role === 'employee')
         .map((e: any) => ({
@@ -75,44 +65,7 @@ export default async function ProgressTrackingPage({ params }: { params: Promise
                 <p className="text-muted-foreground mt-2">Monitor employee learning progress across all courses.</p>
             </div>
 
-            <div className="border rounded-md bg-white">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Employee Name</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead className="text-center">Courses Assigned</TableHead>
-                            <TableHead className="text-center">Items Completed</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {employeesWithStats.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
-                                    No employees found.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                        {employeesWithStats.map((employee) => (
-                            <TableRow key={employee.id}>
-                                <TableCell className="font-medium">{employee.full_name || 'Unnamed'}</TableCell>
-                                <TableCell>{employee.email}</TableCell>
-                                <TableCell className="text-center">{employee.courses_assigned}</TableCell>
-                                <TableCell className="text-center">{employee.items_completed}</TableCell>
-                                <TableCell className="text-right">
-                                    <Link 
-                                        href={ROUTES.tenant(tenantSlug).admin.employeeProgress(employee.id)}
-                                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                    >
-                                        View Details <ChevronRight className="w-4 h-4" />
-                                    </Link>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+            <ProgressTrackingClient employees={employeesWithStats} tenantSlug={tenantSlug} />
         </div>
     )
 }
