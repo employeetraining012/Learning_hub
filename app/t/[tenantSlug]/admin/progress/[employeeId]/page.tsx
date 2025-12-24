@@ -3,16 +3,8 @@ import { getTenantContext } from '@/lib/tenant/context'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ROUTES } from '@/lib/config/routes'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Circle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
 
 // Progress Bar Component
 function ProgressBar({ percentage }: { percentage: number }) {
@@ -68,7 +60,7 @@ export default async function EmployeeProgressPage({
         .eq('employee_id', employeeId)
         .eq('tenant_id', tenant.id)
 
-    // Calculate progress for each course
+    // Calculate progress for each course with detailed module breakdown
     const coursesWithProgress = await Promise.all(
         (assignments || []).map(async (assignment: any) => {
             const course = assignment.courses
@@ -76,55 +68,79 @@ export default async function EmployeeProgressPage({
             // Get modules for this course
             const { data: modules } = await adminClient
                 .from('modules')
-                .select('id')
+                .select('id, title, sort_order')
                 .eq('course_id', course.id)
+                .order('sort_order')
 
             if (!modules || modules.length === 0) {
                 return {
                     ...course,
                     progress_percentage: 0,
                     completed: 0,
-                    total: 0
+                    total: 0,
+                    modules: []
                 }
             }
 
-            const moduleIds = modules.map(m => m.id)
+            // Get content items and progress for each module
+            const modulesWithProgress = await Promise.all(
+                modules.map(async (module) => {
+                    const { data: contentItems } = await adminClient
+                        .from('content_items')
+                        .select('id, title')
+                        .eq('module_id', module.id)
+                        .order('created_at')
 
-            // Get content items count
-            const { data: contentItems } = await adminClient
-                .from('content_items')
-                .select('id')
-                .in('module_id', moduleIds)
+                    const contentItemIds = contentItems?.map(c => c.id) || []
 
-            const total = contentItems?.length || 0
+                    if (contentItemIds.length === 0) {
+                        return {
+                            ...module,
+                            total_items: 0,
+                            completed_items: 0,
+                            content_details: []
+                        }
+                    }
 
-            if (total === 0) {
-                return {
-                    ...course,
-                    progress_percentage: 0,
-                    completed: 0,
-                    total: 0
-                }
-            }
+                    // Get progress for each content item
+                    const { data: progressData } = await adminClient
+                        .from('content_progress')
+                        .select('content_item_id, completed')
+                        .eq('employee_id', employeeId)
+                        .in('content_item_id', contentItemIds)
 
-            const contentItemIds = contentItems?.map(c => c.id) || []
+                    const progressMap: Record<string, boolean> = {}
+                    progressData?.forEach(p => {
+                        progressMap[p.content_item_id] = p.completed
+                    })
 
-            // Get completed count
-            const { count: completedCount } = await adminClient
-                .from('content_progress')
-                .select('*', { count: 'exact', head: true })
-                .eq('employee_id', employeeId)
-                .eq('completed', true)
-                .in('content_item_id', contentItemIds)
+                    const contentDetails = contentItems?.map(item => ({
+                        id: item.id,
+                        title: item.title,
+                        completed: progressMap[item.id] || false
+                    })) || []
 
-            const completed = completedCount || 0
-            const percentage = Math.round((completed / total) * 100)
+                    const completedCount = contentDetails.filter(c => c.completed).length
+
+                    return {
+                        ...module,
+                        total_items: contentDetails.length,
+                        completed_items: completedCount,
+                        content_details: contentDetails
+                    }
+                })
+            )
+
+            const totalItems = modulesWithProgress.reduce((sum, m) => sum + m.total_items, 0)
+            const completedItems = modulesWithProgress.reduce((sum, m) => sum + m.completed_items, 0)
+            const percentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0
 
             return {
                 ...course,
                 progress_percentage: percentage,
-                completed,
-                total
+                completed: completedItems,
+                total: totalItems,
+                modules: modulesWithProgress
             }
         })
     )
@@ -141,39 +157,85 @@ export default async function EmployeeProgressPage({
                 <p className="text-muted-foreground mt-1">{profile.email}</p>
             </div>
 
-            <div className="border rounded-md bg-white">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Course</TableHead>
-                            <TableHead>Progress</TableHead>
-                            <TableHead className="text-center">Completed</TableHead>
-                            <TableHead className="text-center">Total Items</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {coursesWithProgress.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                                    No courses assigned to this employee.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                        {coursesWithProgress.map((course) => (
-                            <TableRow key={course.id}>
-                                <TableCell className="font-medium">
-                                    {course.title}
-                                </TableCell>
-                                <TableCell>
-                                    <ProgressBar percentage={course.progress_percentage} />
-                                </TableCell>
-                                <TableCell className="text-center font-medium">{course.completed}</TableCell>
-                                <TableCell className="text-center text-gray-500">{course.total}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+            {coursesWithProgress.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                    No courses assigned to this employee.
+                </div>
+            )}
+
+            {coursesWithProgress.map((course) => (
+                <div key={course.id} className="mb-8">
+                    <div className="bg-white border rounded-lg overflow-hidden">
+                        {/* Course Header */}
+                        <div className="bg-gray-50 border-b px-6 py-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-xl font-semibold">{course.title}</h2>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        {course.completed} of {course.total} items completed
+                                    </p>
+                                </div>
+                                <ProgressBar percentage={course.progress_percentage} />
+                            </div>
+                        </div>
+
+                        {/* Module Tree View */}
+                        <div className="p-6">
+                            {course.modules.length === 0 && (
+                                <p className="text-gray-500 text-center py-8">No modules in this course yet.</p>
+                            )}
+                            {course.modules.map((module: any, idx: number) => (
+                                <div key={module.id} className="mb-6 last:mb-0">
+                                    {/* Module Header */}
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm">
+                                            {idx + 1}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="font-semibold text-gray-900">{module.title}</h3>
+                                            <p className="text-xs text-gray-500">
+                                                {module.completed_items}/{module.total_items} completed
+                                            </p>
+                                        </div>
+                                        <div className="text-sm font-medium text-gray-600">
+                                            {module.total_items > 0 
+                                                ? `${Math.round((module.completed_items / module.total_items) * 100)}%`
+                                                : '0%'
+                                            }
+                                        </div>
+                                    </div>
+
+                                    {/* Content Items */}
+                                    {module.content_details.length > 0 && (
+                                        <div className="ml-11 space-y-2">
+                                            {module.content_details.map((item: any) => (
+                                                <div 
+                                                    key={item.id} 
+                                                    className="flex items-center gap-2 text-sm py-1.5 px-3 rounded hover:bg-gray-50"
+                                                >
+                                                    {item.completed ? (
+                                                        <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                                                    ) : (
+                                                        <Circle className="w-4 h-4 text-gray-300 shrink-0" />
+                                                    )}
+                                                    <span className={item.completed ? 'text-gray-600' : 'text-gray-800'}>
+                                                        {item.title}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {module.content_details.length === 0 && (
+                                        <div className="ml-11 text-sm text-gray-400 italic">
+                                            No content items yet
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ))}
         </div>
     )
 }

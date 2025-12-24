@@ -25,7 +25,10 @@ export default async function ProgressTrackingPage({ params }: { params: Promise
 
     // Filter to only employees (not admins/owners)
     const employeeList = employees
-        ?.filter((e: any) => e.profiles.role === 'employee')
+        ?.filter((e: any) => {
+            const role = e.profiles.role?.toLowerCase()
+            return role === 'employee'
+        })
         .map((e: any) => ({
             id: e.profiles.id,
             full_name: e.profiles.full_name,
