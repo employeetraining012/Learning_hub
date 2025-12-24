@@ -36,11 +36,11 @@ export function AssignedCourseGrid({ courses, tenantSlug }: { courses: AssignedC
                 <Card key={course.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
                     {/* Course Image */}
                     {course.image_url ? (
-                        <div className="relative h-40 w-full bg-gray-100">
+                        <div className="relative h-40 w-full bg-gray-100 flex items-center justify-center">
                             <img 
                                 src={course.image_url} 
                                 alt={course.title}
-                                className="w-full h-full object-cover"
+                                className="max-w-full max-h-full object-contain"
                             />
                         </div>
                     ) : (
