@@ -13,14 +13,15 @@ export default async function ProgressTrackingPage({ params }: { params: Promise
     const adminClient = createServiceRoleClient()
 
     // Get all employees in this tenant
+    // Get all employees in this tenant
     const { data: employees } = await adminClient
         .from('tenant_memberships')
         .select(`
+            role,
             profiles!inner (
                 id,
                 full_name,
-                email,
-                role
+                email
             )
         `)
         .eq('tenant_id', tenant.id)
@@ -28,7 +29,7 @@ export default async function ProgressTrackingPage({ params }: { params: Promise
     // Filter to only employees (not admins/owners)
     const employeeList = employees
         ?.filter((e: any) => {
-            const role = String(e.profiles.role || '').toLowerCase().trim()
+            const role = String(e.role || '').toLowerCase().trim()
             return role === 'employee'
         })
         .map((e: any) => ({
