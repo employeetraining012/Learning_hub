@@ -24,7 +24,8 @@ export const getMyAssignedCourses = cache(async (tenantId: string) => {
                 id,
                 title,
                 status,
-                description
+                description,
+                image_url
             )
         `)
         .eq('employee_id', user.id)
@@ -45,7 +46,8 @@ export const getMyAssignedCourses = cache(async (tenantId: string) => {
         id: item.courses.id,
         title: item.courses.title,
         status: item.courses.status,
-        description: item.courses.description
+        description: item.courses.description,
+        image_url: item.courses.image_url
     })) || []
 
     console.log('[getMyAssignedCourses] Transformed courses:', JSON.stringify(courses, null, 2))
