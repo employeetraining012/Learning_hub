@@ -36,29 +36,28 @@ export function AssignedCourseGrid({ courses, tenantSlug }: { courses: AssignedC
                 <Card key={course.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
                     {/* Course Image */}
                     {course.image_url ? (
-                        <div className="relative h-40 w-full bg-gray-100 flex items-center justify-center">
+                        <div className="relative h-44 w-full bg-gray-100 flex items-center justify-center p-2">
                             <img 
                                 src={course.image_url} 
                                 alt={course.title}
-                                className="max-w-full max-h-full object-contain"
+                                className="max-w-full max-h-full object-contain rounded-lg"
                             />
                         </div>
                     ) : (
-                        <div className="relative h-40 w-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        <div className="relative h-44 w-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                             <BookOpen className="w-16 h-16 text-white/50" />
                         </div>
                     )}
                     
-                    <CardHeader className="pb-2">
-                        <CardTitle className="line-clamp-1">{course.title}</CardTitle>
-                        <CardDescription className="line-clamp-2 min-h-[40px]">
-                            {course.description || 'No description available'}
-                        </CardDescription>
+                    <CardHeader className="pb-2 pt-4">
+                        <CardTitle className="text-lg font-semibold leading-tight">{course.title}</CardTitle>
                     </CardHeader>
-                    <CardContent className="flex-1">
-                        {/* Progress could go here in Phase 3 */}
+                    <CardContent className="flex-1 pt-0">
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                            {course.description || 'No description available'}
+                        </p>
                     </CardContent>
-                    <CardFooter>
+                    <CardFooter className="pt-4">
                         <Button asChild className="w-full">
                             <Link href={ROUTES.tenant(tenantSlug).employee.course(course.id)}>
                                 View Modules
