@@ -1,11 +1,13 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { ROUTES } from '@/lib/config/routes'
 import { CourseTree } from '@/lib/learn/course-tree'
 import { cn } from '@/lib/utils'
-import { CheckCircle2, Circle, FileText, Link as LinkIcon, PlayCircle, Youtube, ChevronDown, ChevronRight } from 'lucide-react'
+import { CheckCircle2, Circle, FileText, Link as LinkIcon, PlayCircle, ChevronDown, ChevronRight } from 'lucide-react'
+import { toggleContentProgress } from '@/app/t/[tenantSlug]/employee/learn/actions'
+import { toast } from 'sonner'
 
 type CourseSidebarProps = {
     tree: CourseTree
@@ -15,17 +17,65 @@ type CourseSidebarProps = {
 }
 
 export function CourseSidebar({ tree, currentContentId, currentModuleId, tenantSlug }: CourseSidebarProps) {
-    const { modules } = tree
+    const { modules, course } = tree
     // State for expanded modules (default to current module expanded)
     const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
         [currentModuleId]: true
     })
+    
+    // Track local completion state for instant feedback
+    const [completionState, setCompletionState] = useState<Record<string, boolean>>(() => {
+        const state: Record<string, boolean> = {}
+        modules.forEach(m => {
+            m.items.forEach(item => {
+                state[item.id] = item.is_completed || false
+            })
+        })
+        return state
+    })
+
+    const [isPending, startTransition] = useTransition()
 
     const toggleModule = (moduleId: string) => {
         setExpandedModules(prev => ({
             ...prev,
             [moduleId]: !prev[moduleId]
         }))
+    }
+
+    const handleToggleComplete = async (e: React.MouseEvent, contentItemId: string, currentlyCompleted: boolean) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        const newStatus = !currentlyCompleted
+        
+        // Optimistic update
+        setCompletionState(prev => ({
+            ...prev,
+            [contentItemId]: newStatus
+        }))
+
+        startTransition(async () => {
+            const result = await toggleContentProgress(
+                contentItemId,
+                newStatus,
+                course.tenant_id,
+                course.id,
+                currentModuleId,
+                tenantSlug
+            )
+
+            if (result.error) {
+                // Revert on error
+                setCompletionState(prev => ({
+                    ...prev,
+                    [contentItemId]: currentlyCompleted
+                }))
+                toast.error('Failed to update progress')
+            } else {
+                toast.success(newStatus ? 'Marked as complete!' : 'Marked as incomplete')
+            }
+        })
     }
 
     const getIcon = (type: string) => {
@@ -42,7 +92,6 @@ export function CourseSidebar({ tree, currentContentId, currentModuleId, tenantS
         <div className="flex flex-col h-full border-l border-gray-200 bg-white">
             <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between shrink-0 h-14">
                 <h2 className="font-bold text-sm text-gray-800">Course Content</h2>
-                {/* <button className="text-xs text-blue-600 hover:underline">Close</button> */}
             </div>
             
             {/* Native Scroll Area */}
@@ -50,6 +99,9 @@ export function CourseSidebar({ tree, currentContentId, currentModuleId, tenantS
                 <div className="w-full pb-10">
                     {modules.map((module, index) => {
                         const isExpanded = expandedModules[module.id]
+                        const completedCount = module.items.filter(i => completionState[i.id]).length
+                        const totalCount = module.items.length
+                        
                         return (
                             <div key={module.id} className="border-b border-gray-100 last:border-b-0">
                                 {/* Accordion Trigger */}
@@ -62,7 +114,7 @@ export function CourseSidebar({ tree, currentContentId, currentModuleId, tenantS
                                             Section {index + 1}: {module.title}
                                         </div>
                                         <div className="text-xs text-gray-500 font-normal mt-1">
-                                            {module.items.length} lectures
+                                            {completedCount}/{totalCount} completed
                                         </div>
                                     </div>
                                     {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-500 mt-1 shrink-0" /> : <ChevronRight className="w-4 h-4 text-gray-500 mt-1 shrink-0" />}
@@ -73,37 +125,56 @@ export function CourseSidebar({ tree, currentContentId, currentModuleId, tenantS
                                     <div className="flex flex-col bg-white">
                                         {module.items.map((item, i) => {
                                             const isActive = item.id === currentContentId
+                                            const isCompleted = completionState[item.id]
+                                            
                                             return (
-                                                <Link
-                                                    key={item.id}
-                                                    href={ROUTES.tenant(tenantSlug).employee.learn(tree.course.id, module.id, item.id)}
-                                                    className={cn(
-                                                        "relative flex items-start gap-3 px-4 py-3 text-sm transition-all hover:bg-gray-50",
-                                                        isActive 
-                                                            ? "bg-gray-100" 
-                                                            : "text-gray-700"
-                                                    )}
-                                                >
-                                                    {/* Active Left Border Accent */}
-                                                    {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-black" />}
-
-                                                    <div className={cn("mt-0.5 shrink-0", isActive ? "text-black" : "text-gray-400")}>
-                                                        {item.is_completed ? <CheckCircle2 className="w-4 h-4" /> : (
-                                                            isActive ? getIcon(item.type) : <Circle className="w-3 h-3 mt-0.5" />
+                                                <div key={item.id} className="relative flex items-center">
+                                                    <Link
+                                                        href={ROUTES.tenant(tenantSlug).employee.learn(tree.course.id, module.id, item.id)}
+                                                        className={cn(
+                                                            "flex-1 flex items-start gap-3 px-4 py-3 text-sm transition-all hover:bg-gray-50 pr-12",
+                                                            isActive 
+                                                                ? "bg-gray-100" 
+                                                                : "text-gray-700"
                                                         )}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className={cn("text-sm line-clamp-2", isActive ? "font-bold text-black" : "font-normal text-gray-700")}>
-                                                            {i+1}. {item.title}
+                                                    >
+                                                        {/* Active Left Border Accent */}
+                                                        {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-black" />}
+
+                                                        <div className={cn("mt-0.5 shrink-0", isActive ? "text-black" : "text-gray-400")}>
+                                                            {isActive ? getIcon(item.type) : <Circle className="w-3 h-3 mt-0.5" />}
                                                         </div>
-                                                        <div className="flex gap-2 mt-1.5 items-center">
-                                                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                                                                    {getIcon(item.type)} 
-                                                                    <span className="uppercase text-[10px]">{item.type}</span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className={cn("text-sm line-clamp-2", isActive ? "font-bold text-black" : "font-normal text-gray-700")}>
+                                                                {i+1}. {item.title}
+                                                            </div>
+                                                            <div className="flex gap-2 mt-1.5 items-center">
+                                                                <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                                        {getIcon(item.type)} 
+                                                                        <span className="uppercase text-[10px]">{item.type}</span>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </Link>
+                                                    </Link>
+                                                    
+                                                    {/* Toggle Button */}
+                                                    <button
+                                                        onClick={(e) => handleToggleComplete(e, item.id, isCompleted)}
+                                                        className={cn(
+                                                            "absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-all",
+                                                            isCompleted 
+                                                                ? "text-green-600 hover:bg-green-50" 
+                                                                : "text-red-400 hover:bg-red-50"
+                                                        )}
+                                                        title={isCompleted ? "Mark as incomplete" : "Mark as complete"}
+                                                    >
+                                                        {isCompleted ? (
+                                                            <CheckCircle2 className="w-5 h-5 fill-green-100" />
+                                                        ) : (
+                                                            <Circle className="w-5 h-5 fill-red-100 stroke-red-400" />
+                                                        )}
+                                                    </button>
+                                                </div>
                                             )
                                         })}
                                         {module.items.length === 0 && (

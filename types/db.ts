@@ -55,3 +55,14 @@ export type Assignment = {
     course_id: string;
     assigned_at: string;
 };
+
+export type ContentProgress = {
+    id: string;
+    tenant_id: string;
+    employee_id: string;
+    content_item_id: string;
+    completed: boolean;
+    completed_at: string | null;
+    created_at: string;
+    updated_at: string;
+};

@@ -30,7 +30,6 @@ export const getMyAssignedCourses = cache(async (tenantId: string) => {
         `)
         .eq('employee_id', user.id)
         .eq('tenant_id', tenantId)
-        // .eq('courses.status', 'published') <--- Removed this filter
         .order('title', { foreignTable: 'courses' })
 
     if (error) {
@@ -38,19 +37,75 @@ export const getMyAssignedCourses = cache(async (tenantId: string) => {
         return []
     }
 
-    console.log(`[getMyAssignedCourses] Raw data:`, JSON.stringify(data, null, 2))
-    console.log(`[getMyAssignedCourses] Found ${data?.length || 0} assignments`)
+    // Get all course IDs
+    const courseIds = data?.map((item: any) => item.courses.id) || []
 
-    // Transform flattened response
-    const courses = data?.map((item: any) => ({
-        id: item.courses.id,
-        title: item.courses.title,
-        status: item.courses.status,
-        description: item.courses.description,
-        image_url: item.courses.image_url
-    })) || []
+    // Fetch progress for all courses
+    const progressMap: Record<string, { completed: number, total: number }> = {}
 
-    console.log('[getMyAssignedCourses] Transformed courses:', JSON.stringify(courses, null, 2))
+    for (const courseId of courseIds) {
+        // Get modules for this course
+        const { data: modules } = await adminClient
+            .from('modules')
+            .select('id')
+            .eq('course_id', courseId)
+
+        if (!modules || modules.length === 0) {
+            progressMap[courseId] = { completed: 0, total: 0 }
+            continue
+        }
+
+        const moduleIds = modules.map(m => m.id)
+
+        // Get content items count
+        const { data: contentItems } = await adminClient
+            .from('content_items')
+            .select('id')
+            .in('module_id', moduleIds)
+
+        const totalItems = contentItems?.length || 0
+
+        if (totalItems === 0) {
+            progressMap[courseId] = { completed: 0, total: 0 }
+            continue
+        }
+
+        const contentItemIds = contentItems?.map(c => c.id) || []
+
+        // Get completed count
+        const { data: completedProgress } = await adminClient
+            .from('content_progress')
+            .select('id')
+            .eq('employee_id', user.id)
+            .eq('completed', true)
+            .in('content_item_id', contentItemIds)
+
+        progressMap[courseId] = {
+            completed: completedProgress?.length || 0,
+            total: totalItems
+        }
+    }
+
+    // Transform with progress
+    const courses = data?.map((item: any) => {
+        const progress = progressMap[item.courses.id] || { completed: 0, total: 0 }
+        const percentage = progress.total > 0
+            ? Math.round((progress.completed / progress.total) * 100)
+            : 0
+
+        return {
+            id: item.courses.id,
+            title: item.courses.title,
+            status: item.courses.status,
+            description: item.courses.description,
+            image_url: item.courses.image_url,
+            progress_percentage: percentage,
+            progress_completed: progress.completed,
+            progress_total: progress.total
+        }
+    }) || []
+
+    console.log('[getMyAssignedCourses] Courses with progress:', JSON.stringify(courses, null, 2))
     return courses
 })
 

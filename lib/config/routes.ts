@@ -39,6 +39,8 @@ export const ROUTES = {
             audit: `/t/${slug}/admin/audit`,
             search: `/t/${slug}/admin/search`,
             import: `/t/${slug}/admin/tools/import`,
+            progress: `/t/${slug}/admin/progress`,
+            employeeProgress: (employeeId: string) => `/t/${slug}/admin/progress/${employeeId}`,
         },
 
         // Employee routes

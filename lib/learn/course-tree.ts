@@ -10,7 +10,7 @@ export type ContentNode = {
     url?: string
     description?: string
     duration?: number
-    is_completed?: boolean // Future use
+    is_completed?: boolean
 }
 
 export type ModuleNode = {
@@ -66,19 +66,32 @@ export const fetchCourseTree = cache(async (courseId: string, userId: string): P
     if (!modules) return { course, modules: [] }
 
     // 3. Fetch Content Items for all modules
-    // Using a single query with 'in' filter is efficient
     const moduleIds = modules.map(m => m.id)
     const { data: contentItems } = await adminClient
         .from('content_items')
         .select('*')
         .in('module_id', moduleIds)
-    // .order('sort_order') // Add sort_order col to DB later if needed, currently created_at implies order or undefined
 
-    // 4. Assemble Tree
+    // 4. Fetch Progress for all content items
+    const contentItemIds = contentItems?.map(c => c.id) || []
+    let progressMap: Record<string, boolean> = {}
+
+    if (contentItemIds.length > 0) {
+        const { data: progress } = await adminClient
+            .from('content_progress')
+            .select('content_item_id, completed')
+            .eq('employee_id', userId)
+            .in('content_item_id', contentItemIds)
+
+        progress?.forEach(p => {
+            progressMap[p.content_item_id] = p.completed
+        })
+    }
+
+    // 5. Assemble Tree with progress
     const treeModules = modules.map(m => {
         const items = contentItems
             ?.filter(c => c.module_id === m.id)
-            // Sort by creation time as fallback for sort_order
             .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
             .map(c => ({
                 id: c.id,
@@ -87,7 +100,8 @@ export const fetchCourseTree = cache(async (courseId: string, userId: string): P
                 content_source: c.content_source,
                 url: c.url,
                 description: c.description,
-                duration: 0 // Placeholder
+                duration: 0,
+                is_completed: progressMap[c.id] || false
             })) || []
 
         return {

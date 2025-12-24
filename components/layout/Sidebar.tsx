@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Folder, Home, Library, Settings, Users, Search, Activity } from 'lucide-react'
+import { Folder, Home, Library, Settings, Users, Search, Activity, BarChart3 } from 'lucide-react'
 import { ROUTES } from '@/lib/config/routes'
 
 export function Sidebar() {
@@ -18,6 +18,7 @@ export function Sidebar() {
     { name: 'Assignments', href: tenantRoutes.assignments, icon: Settings },
     { name: 'Employees', href: tenantRoutes.employees, icon: Users },
     { name: 'Cohorts', href: tenantRoutes.cohorts, icon: Folder },
+    { name: 'Track Progress', href: tenantRoutes.progress, icon: BarChart3 },
     { name: 'Search', href: tenantRoutes.search, icon: Search },
     { name: 'Audit Logs', href: tenantRoutes.audit, icon: Activity },
   ]
