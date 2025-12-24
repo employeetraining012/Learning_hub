@@ -20,7 +20,10 @@ export default async function NewCohortPage({ params }: { params: Promise<{ tena
         const tenant = await getTenantContext(tenantSlug)
         if (!tenant) return
 
-        const result = await createCohort(formData, tenant.id)
+        const name = formData.get('name') as string
+        const description = formData.get('description') as string
+
+        const result = await createCohort(tenant.id, tenantSlug, name, description)
         if (result.success) {
             redirect(ROUTES.tenant(tenantSlug).admin.cohorts)
         }
