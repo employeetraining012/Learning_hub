@@ -14,14 +14,14 @@ import {
 } from "@/components/ui/table"
 
 const TYPE_ICONS = {
-    youtube: Video,
-    pdf: FileText,
-    ppt: Presentation,
-    link: LinkIcon,
-    doc: FileText,
-    image: FileText, // Could use Image icon if imported
-    video: Video,
-    zip: FileText
+  youtube: Video,
+  pdf: FileText,
+  ppt: Presentation,
+  link: LinkIcon,
+  doc: FileText,
+  image: FileText, // Could use Image icon if imported
+  video: Video,
+  zip: FileText
 }
 
 import { getTenantContext } from '@/lib/tenant/context'
@@ -58,27 +58,27 @@ export default async function ContentPage({ params }: { params: Promise<{ tenant
     <div className="space-y-6">
       <div>
         <Button variant="ghost" size="sm" asChild className="mb-4 pl-0 hover:bg-transparent">
-            {course ? (
-                <Link href={ROUTES.tenant(tenantSlug).admin.modules(course.id)} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
-                    <ChevronLeft className="w-4 h-4" />
-                    Back to Modules
-                </Link>
-            ) : (
-                 <Link href={ROUTES.tenant(tenantSlug).admin.courses} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
-                    <ChevronLeft className="w-4 h-4" />
-                    Back to Courses
-                </Link>
-            )}
+          {course ? (
+            <Link href={ROUTES.tenant(tenantSlug).admin.modules(course.id)} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="w-4 h-4" />
+              Back to Modules
+            </Link>
+          ) : (
+            <Link href={ROUTES.tenant(tenantSlug).admin.courses} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="w-4 h-4" />
+              Back to Courses
+            </Link>
+          )}
         </Button>
         <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight">
-                {moduleInfo?.title || 'Module'} / Content
-            </h1>
-            <ContentDialog 
-                moduleId={moduleId} 
-                tenantId={tenant.id} 
-                nextOrder={(contentItems?.length || 0) + 1}
-            />
+          <h1 className="text-3xl font-bold tracking-tight">
+            {moduleInfo?.title || 'Module'} / Content
+          </h1>
+          <ContentDialog
+            moduleId={moduleId}
+            tenantId={tenant.id}
+            nextOrder={(contentItems?.length || 0) + 1}
+          />
         </div>
       </div>
 
@@ -91,37 +91,36 @@ export default async function ContentPage({ params }: { params: Promise<{ tenant
               <TableHead>Title</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Source</TableHead>
-              <TableHead>URL / Path</TableHead>
+              <TableHead>Source</TableHead>
+              {/* URL/Path Hidden for Security */}
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {contentItems?.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
-                        No content found. Add items.
-                    </TableCell>
-                </TableRow>
+              <TableRow>
+                <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                  No content found. Add items.
+                </TableCell>
+              </TableRow>
             )}
             {contentItems?.map((item) => {
-                const Icon = TYPE_ICONS[item.type as keyof typeof TYPE_ICONS] || LinkIcon
-                return (
+              const Icon = TYPE_ICONS[item.type as keyof typeof TYPE_ICONS] || LinkIcon
+              return (
                 <TableRow key={item.id}>
-                    <TableCell>
-                        <Icon className="w-4 h-4 text-muted-foreground" />
-                    </TableCell>
-                    <TableCell>{item.sort_order}</TableCell>
-                    <TableCell className="font-medium max-w-[200px] break-words">{item.title}</TableCell>
-                    <TableCell className="capitalize">{item.type}</TableCell>
-                    <TableCell className="capitalize">{item.content_source}</TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={item.content_source === 'storage' ? item.storage_path : item.url}>
-                        {item.content_source === 'storage' ? item.storage_path : item.url}
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <ContentActions content={item} moduleId={moduleId} tenantId={tenant.id} />
-                    </TableCell>
+                  <TableCell>
+                    <Icon className="w-4 h-4 text-muted-foreground" />
+                  </TableCell>
+                  <TableCell>{item.sort_order}</TableCell>
+                  <TableCell className="font-medium max-w-[200px] break-words">{item.title}</TableCell>
+                  <TableCell className="capitalize">{item.type}</TableCell>
+                  <TableCell className="capitalize">{item.content_source}</TableCell>
+                  {/* URL Hidden */}
+                  <TableCell className="text-right">
+                    <ContentActions content={item} moduleId={moduleId} tenantId={tenant.id} />
+                  </TableCell>
                 </TableRow>
-                )
+              )
             })}
           </TableBody>
         </Table>

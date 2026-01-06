@@ -27,18 +27,18 @@ import { useParams } from 'next/navigation'
 import { uploadContentFile } from '@/lib/storage/upload'
 import { ExternalLink } from 'lucide-react'
 
-export function ContentDialog({ 
-    moduleId, 
-    content, 
-    trigger,
-    tenantId,
-    nextOrder
-}: { 
-    moduleId: string, 
-    content?: ContentItem, 
-    trigger?: React.ReactNode,
-    tenantId?: string,
-    nextOrder?: number
+export function ContentDialog({
+  moduleId,
+  content,
+  trigger,
+  tenantId,
+  nextOrder
+}: {
+  moduleId: string,
+  content?: ContentItem,
+  trigger?: React.ReactNode,
+  tenantId?: string,
+  nextOrder?: number
 }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -47,7 +47,7 @@ export function ContentDialog({
   const [storagePath, setStoragePath] = useState(content?.storage_path || '')
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
-  
+
   const params = useParams()
   const tenantSlug = params.tenantSlug as string
 
@@ -62,17 +62,17 @@ export function ContentDialog({
     setLoading(false)
 
     if (result.error) {
-        toast.error(result.error)
+      toast.error(result.error)
     } else if (result.path) {
-        setStoragePath(result.path)
-        toast.success('File uploaded successfully')
+      setStoragePath(result.path)
+      toast.success('File uploaded successfully')
     }
   }
 
   const handlePreview = () => {
     const urlInput = document.getElementById('url') as HTMLInputElement
     const url = urlInput?.value || content?.url || ''
-    
+
     if (!url) {
       toast.error('Please enter a URL first')
       return
@@ -89,29 +89,29 @@ export function ContentDialog({
     formData.set('type', type) // Ensure type is explicitly set
 
     if (source === 'storage') {
-        formData.append('storage_path', storagePath)
-        formData.append('content_source', 'storage')
+      formData.append('storage_path', storagePath)
+      formData.append('content_source', 'storage')
     }
-    
+
     let result
     if (content) {
-        result = await updateContent(content.id, moduleId, formData, tenantId || '', tenantSlug)
+      result = await updateContent(content.id, moduleId, formData, tenantId || '', tenantSlug)
     } else {
-        if (!tenantId) {
-            toast.error('Missing tenant ID')
-            setLoading(false)
-            return
-        }
-        result = await createContent(moduleId, formData, tenantId, tenantSlug)
+      if (!tenantId) {
+        toast.error('Missing tenant ID')
+        setLoading(false)
+        return
+      }
+      result = await createContent(moduleId, formData, tenantId, tenantSlug)
     }
 
     setLoading(false)
 
     if (result?.error) {
-        toast.error(result.error)
+      toast.error(result.error)
     } else {
-        toast.success(content ? 'Content updated' : 'Content added')
-        setOpen(false)
+      toast.success(content ? 'Content updated' : 'Content added')
+      setOpen(false)
     }
   }
 
@@ -129,53 +129,54 @@ export function ContentDialog({
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
-              <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input id="title" name="title" defaultValue={content?.title} required />
+                <Label htmlFor="title">Title</Label>
+                <Input id="title" name="title" defaultValue={content?.title} required />
               </div>
               <div className="grid gap-2">
-                  <Label htmlFor="type">Type</Label>
-                  <Select value={type} onValueChange={(val: any) => setType(val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="youtube">YouTube</SelectItem>
-                      <SelectItem value="pdf">PDF</SelectItem>
-                      <SelectItem value="ppt">PPT</SelectItem>
-                      <SelectItem value="link">Link</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <Label htmlFor="type">Type</Label>
+                <Select value={type} onValueChange={(val: any) => setType(val)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="youtube">YouTube</SelectItem>
+                    <SelectItem value="vimeo">Vimeo</SelectItem>
+                    <SelectItem value="pdf">PDF</SelectItem>
+                    <SelectItem value="ppt">PPT</SelectItem>
+                    <SelectItem value="link">Link</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
-                  <Label htmlFor="url">URL</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                        id="url" 
-                        name="url" 
-                        type="text" 
-                        defaultValue={content?.url || ''} 
-                        required 
-                        placeholder="https://" 
-                        className="flex-1"
-                    />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="icon"
-                      onClick={handlePreview}
-                      title="Preview Content"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
-                  </div>
+                <Label htmlFor="url">URL</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="url"
+                    name="url"
+                    type="text"
+                    defaultValue={content?.url || ''}
+                    required
+                    placeholder="https://"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handlePreview}
+                    title="Preview Content"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               <input type="hidden" name="type" value={type} />
-              </div>
-              <DialogFooter>
+            </div>
+            <DialogFooter>
               <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
-              </DialogFooter>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -190,8 +191,8 @@ export function ContentDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
-            <iframe 
-              src={previewUrl} 
+            <iframe
+              src={previewUrl}
               className="w-full h-full border-0"
               title="Content Preview"
             />

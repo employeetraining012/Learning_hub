@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { VimeoEmbed } from '@/components/learn/VimeoEmbed'
 import { ROUTES } from '@/lib/config/routes'
 
 export default async function ContentViewerPage({ params }: { params: Promise<{ tenantSlug: string, contentId: string }> }) {
@@ -60,6 +61,7 @@ export default async function ContentViewerPage({ params }: { params: Promise<{ 
     }
 
     const isYouTube = contentItem.type === 'youtube' || contentItem.url?.includes('youtube.com') || contentItem.url?.includes('youtu.be')
+    const isVimeo = contentItem.type === 'vimeo' || contentItem.url?.includes('vimeo.com')
     const isPdf = contentItem.type === 'pdf' || contentItem.url?.toLowerCase().endsWith('.pdf')
     const isPpt = contentItem.type === 'ppt' || contentItem.url?.toLowerCase().endsWith('.ppt') || contentItem.url?.toLowerCase().endsWith('.pptx')
     const isImage = contentItem.type === 'image'
@@ -76,6 +78,14 @@ export default async function ContentViewerPage({ params }: { params: Promise<{ 
                 videoId = rawUrl.split('embed/')[1].split('?')[0]
             }
             return `https://www.youtube.com/embed/${videoId}`
+        }
+        if (isVimeo) {
+            // Extract Vimeo ID
+            const match = rawUrl.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/)
+            if (match && match[1]) {
+                return `https://player.vimeo.com/video/${match[1]}?title=0&byline=0&portrait=0&badge=0&dnt=1&autopause=0&player_id=0&app_id=58479`
+            }
+            return rawUrl
         }
         if (isPpt) {
             return `https://docs.google.com/gview?url=${encodeURIComponent(rawUrl)}&embedded=true`
@@ -113,35 +123,37 @@ export default async function ContentViewerPage({ params }: { params: Promise<{ 
                 <div className="bg-black rounded-lg overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
                     {embedUrl ? (
                         isYouTube ? (
-                            <iframe 
+                            <iframe
                                 src={embedUrl}
                                 className="w-full h-full"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                 allowFullScreen
                             />
+                        ) : isVimeo ? (
+                            <VimeoEmbed url={contentItem.url || ''} />
                         ) : isPdf || isPpt ? (
-                            <iframe 
+                            <iframe
                                 src={embedUrl}
                                 className="w-full h-full"
                             />
                         ) : isImage ? (
                             <div className="w-full h-full flex items-center justify-center bg-gray-950">
-                                <img 
-                                    src={contentItem.url || ''} 
-                                    alt={contentItem.title} 
+                                <img
+                                    src={contentItem.url || ''}
+                                    alt={contentItem.title}
                                     className="max-w-full max-h-full object-contain"
                                 />
                             </div>
                         ) : isVideo ? (
-                            <video 
-                                src={contentItem.url || ''} 
-                                controls 
+                            <video
+                                src={contentItem.url || ''}
+                                controls
                                 autoPlay
                                 className="w-full h-full"
                             />
                         ) : (
-                            <iframe 
-                                src={embedUrl} 
+                            <iframe
+                                src={embedUrl}
                                 className="w-full h-full"
                             />
                         )

@@ -5,7 +5,7 @@ import { cache } from 'react'
 export type ContentNode = {
     id: string
     title: string
-    type: 'video' | 'youtube' | 'pdf' | 'link' | 'text' | 'image' | 'ppt'
+    type: 'video' | 'youtube' | 'pdf' | 'link' | 'text' | 'image' | 'ppt' | 'vimeo'
     content_source: 'upload' | 'embed' | 'url'
     url?: string
     description?: string
@@ -98,7 +98,7 @@ export const fetchCourseTree = cache(async (courseId: string, userId: string): P
                 title: c.title,
                 type: c.type,
                 content_source: c.content_source,
-                url: c.url,
+                url: c.content_source === 'storage' ? `/api/content/${c.id}` : c.url,
                 description: c.description,
                 duration: 0,
                 is_completed: progressMap[c.id] || false

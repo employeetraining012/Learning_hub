@@ -31,7 +31,7 @@ export type Module = {
     updated_at: string;
 };
 
-export type ContentItemType = 'youtube' | 'pdf' | 'ppt' | 'link' | 'video' | 'image';
+export type ContentItemType = 'youtube' | 'pdf' | 'ppt' | 'link' | 'video' | 'image' | 'vimeo';
 
 export type ContentItem = {
     id: string;

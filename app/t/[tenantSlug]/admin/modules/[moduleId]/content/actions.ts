@@ -9,7 +9,7 @@ import { ROUTES } from '@/lib/config/routes'
 const contentSchema = z.object({
     title: z.string().trim().min(1, "Title is required"),
     url: z.string().trim().min(1, "URL is required").optional().or(z.literal("")),
-    type: z.enum(['youtube', 'pdf', 'ppt', 'link', 'video', 'image']),
+    type: z.enum(['youtube', 'pdf', 'ppt', 'link', 'video', 'image', 'vimeo']),
     content_source: z.enum(['external', 'storage']).default('external'),
     storage_path: z.string().optional(),
 })
