@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { VimeoEmbed } from '@/components/learn/VimeoEmbed'
+import { YouTubeEmbed } from '@/components/learn/YouTubeEmbed'
 import { ROUTES } from '@/lib/config/routes'
 
 export default async function ContentViewerPage({ params }: { params: Promise<{ tenantSlug: string, contentId: string }> }) {
@@ -123,12 +124,7 @@ export default async function ContentViewerPage({ params }: { params: Promise<{ 
                 <div className="bg-black rounded-lg overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
                     {embedUrl ? (
                         isYouTube ? (
-                            <iframe
-                                src={embedUrl}
-                                className="w-full h-full"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                allowFullScreen
-                            />
+                            <YouTubeEmbed url={contentItem.url || ''} />
                         ) : isVimeo ? (
                             <VimeoEmbed url={contentItem.url || ''} />
                         ) : isPdf || isPpt ? (

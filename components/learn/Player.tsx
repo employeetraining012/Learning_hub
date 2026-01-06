@@ -30,6 +30,8 @@ const SecureVimeoPlayer = dynamic(
     }
 )
 
+const YouTubeEmbed = dynamic(() => import('./YouTubeEmbed').then(mod => mod.YouTubeEmbed), { ssr: false })
+
 interface PlayerProps {
     item: ContentNode
 }
@@ -100,12 +102,7 @@ export function Player({ item }: PlayerProps) {
         return (
             <div className="w-full h-full bg-black flex items-center justify-center">
                 <div className="w-full aspect-video md:aspect-auto md:h-full">
-                    <iframe
-                        src={embedUrl}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                    />
+                    <YouTubeEmbed url={item.url} />
                 </div>
             </div>
         )
