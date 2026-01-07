@@ -2,13 +2,14 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ROUTES } from '@/lib/config/routes'
 import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardFooter,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card'
 import { BookOpen } from 'lucide-react'
+import { getDirectGoogleDriveLink } from '@/lib/utils'
 
 // Type for assigned courses with progress
 type AssignedCourse = {
@@ -27,7 +28,7 @@ function CircularProgress({ percentage }: { percentage: number }) {
     const radius = 18
     const circumference = 2 * Math.PI * radius
     const strokeDashoffset = circumference - (percentage / 100) * circumference
-    
+
     const getColor = () => {
         if (percentage === 100) return 'text-green-500'
         if (percentage >= 50) return 'text-blue-500'
@@ -86,11 +87,11 @@ export function AssignedCourseGrid({ courses, tenantSlug }: { courses: AssignedC
                 <Card key={course.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
                     {/* Course Image */}
                     {course.image_url ? (
-                        <div className="relative h-44 w-full bg-gray-100 flex items-center justify-center p-2">
-                            <img 
-                                src={course.image_url} 
+                        <div className="relative h-44 w-full bg-white flex items-center justify-center">
+                            <img
+                                src={getDirectGoogleDriveLink(course.image_url) || ''}
                                 alt={course.title}
-                                className="max-w-full max-h-full object-contain rounded-lg"
+                                className="w-full h-full object-contain"
                             />
                         </div>
                     ) : (
@@ -98,7 +99,7 @@ export function AssignedCourseGrid({ courses, tenantSlug }: { courses: AssignedC
                             <BookOpen className="w-16 h-16 text-white/50" />
                         </div>
                     )}
-                    
+
                     <CardHeader className="pb-2 pt-4">
                         <div className="flex items-start justify-between gap-3">
                             <CardTitle className="text-lg font-semibold leading-tight flex-1">{course.title}</CardTitle>
